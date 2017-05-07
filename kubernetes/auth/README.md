@@ -3,9 +3,13 @@
 
 ## Deployment
 
-Create secrets
+Create secrets and configmaps
 
     kubectl create secret generic keycloak --from-literal=username=admin --from-literal=password=admin
+    kubectl create configmap nginx-config --from-file=nginx.conf
+
+    kubectl --namespace=kube-system create configmap traefik-conf --from-file=traefik.toml
+
 
 
 Start containers
@@ -15,7 +19,7 @@ Start containers
 
 See that keycloak starts successfully
 
-    kubectl logs -f keycloak
+    kubectl logs -f keycloakNNNN
 
 
 

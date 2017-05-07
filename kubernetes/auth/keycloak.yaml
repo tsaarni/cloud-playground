@@ -1,36 +1,51 @@
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1beta1
+kind: Deployment
 metadata:
-  name: keycloak
-  labels:
-    app: keycloak-app
-
+  name: keycloak-deployment
 spec:
-  volumes:
-    - name: keycloak-persistent-data
-      emptyDir: {}
+  template:
+    metadata:
+      labels:
+        app: keycloak-app
+    spec:
 
-  containers:
-    - name: keycloak-container
-      image: jboss/keycloak
-
-      volumeMounts:
+      volumes:
         - name: keycloak-persistent-data
-          mountPath: /opt/jboss/keycloak/standalone/data
+          emptyDir: {}
+        - name: nginx-config-vol
+          configMap:
+            name: nginx-config
+            items:
+              - key: nginx.conf
+                path: nginx.conf
 
-      env:
-        - name: KEYCLOAK_USER
-          valueFrom:
-            secretKeyRef:
-              name: keycloak
-              key: username
-        - name: KEYCLOAK_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: keycloak
-              key: password
-        - name: PROXY_ADDRESS_FORWARDING
-          value: true
+      containers:
+
+        - name: keycloak-container
+          image: jboss/keycloak
+          volumeMounts:
+            - name: keycloak-persistent-data
+              mountPath: /opt/jboss/keycloak/standalone/data
+          env:
+            - name: KEYCLOAK_USER
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak
+                  key: username
+            - name: KEYCLOAK_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak
+                  key: password
+            - name: PROXY_ADDRESS_FORWARDING
+              value: "true"
+
+        - name: nginx-container
+          image: nginx:alpine
+          volumeMounts:
+            - name: nginx-config-vol
+              mountPath: /etc/nginx/nginx2.conf
+              subPath: nginx.conf
 
 # todo nginx reverse proxy for https
 

@@ -1,0 +1,5 @@
+- name: ensure remote hosts are allowed to connect to forwarded ports
+  lineinfile: dest=/etc/ssh/sshd_config regexp='^#GatewayPorts' line='GatewayPorts yes'
+  notify:
+    - restart sshd
+

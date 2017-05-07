@@ -1,0 +1,14 @@
+defaultEntryPoints = ["https"]
+[entryPoints]
+  [entryPoints.https]
+  address = ":443"
+  [entryPoints.https.tls]
+[acme]
+email = "tero.saarni@gmail.com"
+storageFile = "/acme/acme.json"
+entryPoint = "https"
+onDemand = true
+onHostRule = true
+caServer = "https://acme-staging.api.letsencrypt.org/directory"
+[[acme.domains]]
+main = "add-domain-here"
