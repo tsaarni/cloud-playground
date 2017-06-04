@@ -1,0 +1,107 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: server
+spec:
+  template:
+    metadata:
+      labels:
+        app: server-app
+
+    spec:
+      containers:
+
+      - name: server-container
+        image: alpine
+        command: ["sleep", "99999999"]
+        volumeMounts:
+          - name: server-secrets
+            mountPath: /var/run/secrets/certs
+            readOnly: true
+
+      initContainers:
+
+      - name: certificate-fetcher
+        image: certificate-fetcher:latest
+        imagePullPolicy: Never
+
+        volumeMounts:
+          - name: server-secrets
+            mountPath: /var/run/secrets/certs
+        env:
+        - name: VAULT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: vault-token
+              key: VAULT_TOKEN
+        - name: VAULT_ADDR
+          value: "http://vault:8200"
+        - name: CERT_PATH
+          value: "/var/run/secrets/certs"
+        - name: CERT_SAN_DNSNAME
+          value: 'server.default.svc.cluster.local'
+
+      volumes:
+      - name: server-secrets
+        emptyDir:
+          medium: Memory
+
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: client
+spec:
+  template:
+    metadata:
+      labels:
+        app: client-app
+
+    spec:
+      containers:
+
+      - name: client-container
+        image: alpine
+        command: ["sleep", "99999999"]
+        volumeMounts:
+          - name: client-secrets
+            mountPath: /var/run/secrets/certs
+            readOnly: true
+
+      initContainers:
+
+      - name: certificate-fetcher
+        image: certificate-fetcher:latest
+        imagePullPolicy: Never
+
+        volumeMounts:
+          - name: client-secrets
+            mountPath: /var/run/secrets/certs
+        env:
+        - name: VAULT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: vault-token
+              key: VAULT_TOKEN
+        - name: VAULT_ADDR
+          value: "http://vault:8200"
+        - name: CERT_PATH
+          value: "/var/run/secrets/certs"
+        - name: CERT_SAN_DNSNAME
+          value: 'client.default.svc.cluster.local'
+
+      volumes:
+      - name: client-secrets
+        emptyDir:
+          medium: Memory
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: server
+spec:
+  selector:
+    app: server-app
+  ports:
+    - port: 4433

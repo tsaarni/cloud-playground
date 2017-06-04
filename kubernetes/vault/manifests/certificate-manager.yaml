@@ -1,0 +1,19 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: certificate-manager
+spec:
+  template:
+    metadata:
+      labels:
+        app: certificate-manager-app
+    spec:
+      containers:
+      - name: certificate-manager-container
+        image: certificate-manager:latest
+        imagePullPolicy: Never
+        env:
+        - name: VAULT_TOKEN
+          value: NNNN
+        - name: VAULT_ADDR
+          value: "http://vault:8200"

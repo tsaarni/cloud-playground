@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: server-secrets
+type: Opaque
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: client-secrets
+type: Opaque
+
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: server
+spec:
+  template:
+    metadata:
+      labels:
+        app: server-app
+      annotations:
+        certificate-manager/kubernetes-secret: server-secrets
+        certificate-manager/cert-san-dnsname: server.default.svc.cluster.local
+
+    spec:
+      containers:
+
+      - name: server-container
+        image: alpine
+        command: ["sleep", "99999999"]
+        volumeMounts:
+          - name: server-secrets
+            mountPath: /var/run/secrets/certs
+            readOnly: true
+
+      volumes:
+      - name: server-secrets
+        secret:
+          secretName: server-secrets
+
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: client
+spec:
+  template:
+    metadata:
+      labels:
+        app: client-app
+      annotations:
+        certificate-manager/kubernetes-secret: client-secrets
+        certificate-manager/cert-san-dnsname: client.default.svc.cluster.local
+
+    spec:
+
+      containers:
+      - name: client-container
+        image: alpine
+        command: ["sleep", "99999999"]
+        volumeMounts:
+          - name: client-secrets
+            mountPath: /var/run/secrets/certs
+            readOnly: true
+
+      volumes:
+      - name: client-secrets
+        secret:
+          secretName: client-secrets
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: server
+spec:
+  selector:
+    app: server-app
+  ports:
+    - port: 4433
