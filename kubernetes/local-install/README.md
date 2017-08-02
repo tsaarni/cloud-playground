@@ -10,17 +10,22 @@ that it runs Kubernetes in a separate virtual machine (although work
 is being done for localkube / no-vm minikube).
 
 Only single node is required to run Kubernetes, but the instructions
-also show how to add worker nodes.
+also show how to add worker nodes.  You can probably manage with 2GB
+RAM on master node and 1GB on workers at minimum.
+
+Pre-compiled Kubernetes packages exist also for CentOS.  Refer to
+[Kubernetes documentation](https://kubernetes.io/docs/setup/independent/install-kubeadm/#installing-kubelet-and-kubeadm)
+for further information.
 
 
 ## Pre-conditions
 
 Install docker, for example using the apt-repository of Docker Inc.:
 
-    apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
-    echo deb https://apt.dockerproject.org/repo ubuntu-$(lsb_release -cs) main > /etc/apt/sources.list.d/docker.list
-    apt-get update
-    apt-get install -y docker-engine
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+    echo deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable > /etc/apt/sources.list.d/docker.list
+    apt update
+    apt install -y docker-ce
 
 
 ## Install Kubernetes packages on the host system
@@ -37,15 +42,11 @@ http://apt.kubernetes.io.  The packages include `kubectl` for several
 distro releases and server packages for Xenial 16.04 LTS.  Note that
 as of today (2017-07-17), there is NO client or server packages for 17.04 Zesty.
 
-To install the repository, run following commands as root:
+To add the repository and install packages, run following commands as root:
 
     curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
     echo "deb http://apt.kubernetes.io/ kubernetes-$(lsb_release -cs) main" > /etc/apt/sources.list.d/kubernetes.list
     apt update
-
-
-Then install packages
-
     apt install -y kubeadm kubelet kubernetes-cni
 
 
@@ -141,7 +142,8 @@ Then deploy CNI networking plugin
     kubectl apply -f http://docs.projectcalico.org/v2.3/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml --kubeconfig /etc/kubernetes/admin.conf
 
 
-Run `kubectl get nodes` and wait for the node to change to `Ready` status.
+Run `kubectl get nodes --kubeconfig /etc/kubernetes/admin.conf` and
+wait for the node to change to `Ready` status.
 
 
 ## Adding worker nodes to the cluster
