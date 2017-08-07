@@ -15,14 +15,16 @@ RAM on master node and 1GB on workers at minimum.
 
 Pre-compiled Kubernetes packages exist also for CentOS.  Refer to
 [Kubernetes documentation](https://kubernetes.io/docs/setup/independent/install-kubeadm/#installing-kubelet-and-kubeadm)
-for further information.
+for further information.  For further information about use of
+kubeadm see
+[here](https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/).
 
 
 ## Pre-conditions
 
 Install docker, for example using the apt-repository of Docker Inc.:
 
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
     echo deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable > /etc/apt/sources.list.d/docker.list
     apt update
     apt install -y docker-ce
@@ -139,7 +141,7 @@ scheduling pods on the master node too:
     kubectl taint nodes --all node-role.kubernetes.io/master- --kubeconfig /etc/kubernetes/admin.conf
 
 
-Then deploy CNI networking plugin, for example:
+Then deploy CNI networking plugin, for example Calico:
 
     kubectl apply -f http://docs.projectcalico.org/v2.3/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml --kubeconfig /etc/kubernetes/admin.conf
 
@@ -147,7 +149,13 @@ Then deploy CNI networking plugin, for example:
 Run `kubectl get nodes --kubeconfig /etc/kubernetes/admin.conf` and
 wait for the node to change to `Ready` status.
 
-Copy or merge /etc/kubernetes/admin.conf to your ~/.kube/config.
+Finally copy `/etc/kubernetes/admin.conf` to your home directory:
+
+    cp /etc/kubernetes/admin.conf ~/.kube/config
+
+
+This will allow kubectl to work with the newly created cluster without
+the need to explicitely give --kubeconfig in each command..
 
 
 
@@ -188,22 +196,22 @@ First upgrade the packages and restart kubelet
 
 
     # alt 1: using pre-compiled packages
-    sudo apt upgrade
+    apt upgrade
 
     # alt 2: using your own packages
-    sudo dpkg -i debian/bin/stable/zesty/*
+    dpkg -i debian/bin/stable/zesty/*
 
-    sudo systemctl restart kubelet
+    systemctl restart kubelet
 
 
 Then upgrade the containers
 
-    kubectl delete daemonset kube-proxy -n kube-system
+    kubectl delete daemonset kube-proxy -n kube-system  --kubeconfig /etc/kubernetes/admin.conf
 
-    sudo kubeadm init --skip-preflight-checks --kubernetes-version v1.7.3
+    kubeadm init --skip-preflight-checks --kubernetes-version v1.7.3
 
     # untaint again to enable container scheduling in single-node installation
-    kubectl taint nodes --all node-role.kubernetes.io/master-
+    kubectl taint nodes --all node-role.kubernetes.io/master-  --kubeconfig /etc/kubernetes/admin.conf
 
 
 
@@ -225,7 +233,7 @@ Execute following to remove Kubernetes:
 
 ### Kubeadm join fails
 
-With Kubernetes 1.7.1 you may get following error when running `kubeadm join`:
+With Kubernetes 1.7.x you may get following error when running `kubeadm join`:
 
     [preflight] Some fatal errors occurred:
         hostname "" a DNS-1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')
@@ -240,11 +248,26 @@ As a workaround, use command `kubeadm join --skip-preflight-checks` to ignore th
 
 Kube-dns fails to resolve external DNS names, for example:
 
-    / # ping www.google.com
+    $ ping www.google.com
     ping: bad address 'www.google.com'
 
 
-Following error can be found in dnsmasq side-car:
+The problem is that Ubuntu Desktop uses loopback address for name
+server (Ubuntu server is not using same setup).  You can see this in
+`/etc/resolv.conf` on host system.  The point in using loopback is to
+forward DNS queries to local dnsmasq or systemd-resolv in latest
+versions.  However in Kubernetes it causes DNS queries to be
+recursively sent to itself.
+
+To verify that you are impacted by this problem, check that kube-dns
+is using loopback address (127.n.n.n):
+
+    $ kubectl exec --namespace=kube-system kube-dns-NNNNNNNNNN cat /etc/resolv.conf
+    nameserver 127.0.0.53
+
+
+and that you see following error in dnsmasq side-car after making DNS
+query on any container:
 
     $ kubectl logs -f  --namespace=kube-system kube-dns-NNNNNNNNNN dnsmasq
     ...
@@ -254,18 +277,9 @@ Following error can be found in dnsmasq side-car:
     ...
 
 
-The problem is that Ubuntu Desktop (not server) uses dnsmasq and
-later versions use systemd-resolv which puts localhost address in
-/etc/resolv.conf.  This gets copied to kube-dns and causes recursive
-queries to itself:
-
-    $ kubectl exec --namespace=kube-system kube-dns-NNNNNNNNNN cat /etc/resolv.conf
-    nameserver 127.0.0.53
-
-
-See ticket https://github.com/kubernetes/kubeadm/issues/273.
-
-As a workaround you can create separate resolv.conf for Kubernetes `/etc/kubernetes/resolv.conf` with following content (assuming Google DNS server)
+As a workaround you can create separate resolv.conf for Kubernetes
+`/etc/kubernetes/resolv.conf` with following content (assuming Google
+DNS server)
 
     nameserver 8.8.8.8
 
@@ -287,3 +301,6 @@ Execute following to take the new configuration into use
 
     # delete kube-dns in order to restart it
     kubectl delete pod --namespace=kube-system kube-dns-NNNNNNNNNN
+
+
+See ticket https://github.com/kubernetes/kubeadm/issues/273.
