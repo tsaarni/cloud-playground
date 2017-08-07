@@ -84,7 +84,7 @@ Add support for Ubuntu Zesty into the source code:
             builtins = map[string]interface{}{
 
 
-Make a enw directory for zesty and symbolic links for the packages
+Make a env directory for zesty and symbolic links for the packages
 
     mkdir debian/zesty
     ln -s ../xenial/kubeadm debian/zesty
@@ -128,8 +128,10 @@ following command as root:
 
 Wait for the command to complete.  The command will write manifests to
 `/etc/kubernetes/manifests/` for deploying etcd, kube-apiserver,
-kube-controller-manager and kube-scheduler.  Kubelet, which was
-installed as .deb package, polls this directory for new manifests.
+kube-controller-manager and kube-scheduler as containers.  Kubelet,
+which was installed as .deb package, polls this directory for new
+manifests.  It will take a while for it to download and start the
+containers.
 
 For single-node installation, un-taint the master node to enable
 scheduling pods on the master node too:
@@ -137,7 +139,7 @@ scheduling pods on the master node too:
     kubectl taint nodes --all node-role.kubernetes.io/master- --kubeconfig /etc/kubernetes/admin.conf
 
 
-Then deploy CNI networking plugin
+Then deploy CNI networking plugin, for example:
 
     kubectl apply -f http://docs.projectcalico.org/v2.3/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml --kubeconfig /etc/kubernetes/admin.conf
 
@@ -145,8 +147,11 @@ Then deploy CNI networking plugin
 Run `kubectl get nodes --kubeconfig /etc/kubernetes/admin.conf` and
 wait for the node to change to `Ready` status.
 
+Copy or merge /etc/kubernetes/admin.conf to your ~/.kube/config.
 
-## Adding worker nodes to the cluster
+
+
+## Optional: Adding worker nodes to the cluster
 
 First install docker, kubelet, kubernetes-cni, kubectl and kubeadm.
 See previous chapter for details.
@@ -172,7 +177,53 @@ will take a while for the worker to download and start the Kubernetes
 containers.
 
 
-### Errors and workarounds
+
+## Upgrade
+
+In this example kubernetes is upgraded to v1.7.3. See
+[here](https://kubernetes.io/docs/tasks/administer-cluster/kubeadm-upgrade-1-7/)
+for more information.
+
+First upgrade the packages and restart kubelet
+
+
+    # alt 1: using pre-compiled packages
+    sudo apt upgrade
+
+    # alt 2: using your own packages
+    sudo dpkg -i debian/bin/stable/zesty/*
+
+    sudo systemctl restart kubelet
+
+
+Then upgrade the containers
+
+    kubectl delete daemonset kube-proxy -n kube-system
+
+    sudo kubeadm init --skip-preflight-checks --kubernetes-version v1.7.3
+
+    # untaint again to enable container scheduling in single-node installation
+    kubectl taint nodes --all node-role.kubernetes.io/master-
+
+
+
+
+## Remove installation
+
+Execute following to remove Kubernetes:
+
+    kubeadm reset
+    apt purge -y kubeadm kubelet kubernetes-cni
+
+    # Assuming Calico CNI plugin was installed:
+    rm -r /opt/cni/bin/
+    rm -r /var/etcd/calico-data/
+
+
+
+## Errors and workarounds
+
+### Kubeadm join fails
 
 With Kubernetes 1.7.1 you may get following error when running `kubeadm join`:
 
@@ -183,3 +234,56 @@ With Kubernetes 1.7.1 you may get following error when running `kubeadm join`:
 
 
 As a workaround, use command `kubeadm join --skip-preflight-checks` to ignore the error.
+
+
+### DNS does not resolve external names
+
+Kube-dns fails to resolve external DNS names, for example:
+
+    / # ping www.google.com
+    ping: bad address 'www.google.com'
+
+
+Following error can be found in dnsmasq side-car:
+
+    $ kubectl logs -f  --namespace=kube-system kube-dns-NNNNNNNNNN dnsmasq
+    ...
+    I0806 15:36:54.017032      32 nanny.go:108] dnsmasq[55]: Maximum number of concurrent DNS queries reached (max: 150)
+    I0806 15:37:04.034068      32 nanny.go:108] dnsmasq[55]: Maximum number of concurrent DNS queries reached (max: 150)
+    I0806 15:37:14.049436      32 nanny.go:108] dnsmasq[55]: Maximum number of concurrent DNS queries reached (max: 150)
+    ...
+
+
+The problem is that Ubuntu Desktop (not server) uses dnsmasq and
+later versions use systemd-resolv which puts localhost address in
+/etc/resolv.conf.  This gets copied to kube-dns and causes recursive
+queries to itself:
+
+    $ kubectl exec --namespace=kube-system kube-dns-NNNNNNNNNN cat /etc/resolv.conf
+    nameserver 127.0.0.53
+
+
+See ticket https://github.com/kubernetes/kubeadm/issues/273.
+
+As a workaround you can create separate resolv.conf for Kubernetes `/etc/kubernetes/resolv.conf` with following content (assuming Google DNS server)
+
+    nameserver 8.8.8.8
+
+
+Alternatively, if your system is running systemd-resolv you can
+re-use `/run/systemd/resolve/resolv.conf`.
+Then point out configuration file to be used by creating file
+`/etc/systemd/system/kubelet.service.d/override.conf` with following
+content:
+
+    [Service]
+    Environment="KUBELET_DNS_ARGS=--cluster-dns=10.96.0.10 --cluster-domain=cluster.local --resolv-conf=/etc/kubernetes/resolv.conf"
+
+
+Execute following to take the new configuration into use
+
+    systemctl daemon-reload
+    systemctl restart kubelet
+
+    # delete kube-dns in order to restart it
+    kubectl delete pod --namespace=kube-system kube-dns-NNNNNNNNNN
