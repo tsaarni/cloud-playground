@@ -1,0 +1,11 @@
+{
+    "CN": "vault",
+    "Hosts": [
+        "vault.svc.cluster.local",
+        "vault"
+    ],
+    "key": {
+        "algo": "ecdsa",
+        "size": 256
+    }
+}
