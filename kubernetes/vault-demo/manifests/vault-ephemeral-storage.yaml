@@ -22,8 +22,11 @@ spec:
           - name: vault-config
             mountPath: /vault/config
             readOnly: false
-        command: ["/bin/sh"]
-        args: ["-c", "/bin/vault server -config=/vault/config"]
+        command:
+          - "/bin/sh"
+        args:
+          - "-c"
+          - "/bin/vault server -config=/vault/config"
       volumes:
       - name: vault-cert
         secret:

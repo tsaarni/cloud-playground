@@ -11,8 +11,11 @@ spec:
       containers:
       - name: alpine
         image: alpine:latest
-        command: ["/bin/sh"]
-        args: ["-c", "while true; do nc -l -p 7 -e cat; done"]
+        command:
+          - "/bin/sh"
+        args:
+          - "-c"
+          - "while true; do nc -l -p 7 -e cat; done"
 ---
 apiVersion: v1
 kind: Service

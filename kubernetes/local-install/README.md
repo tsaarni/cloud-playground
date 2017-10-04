@@ -125,7 +125,8 @@ Install the packages
 In this document the `kubeadm` is used for deployment.  Execute
 following command as root:
 
-    kubeadm init
+    # the pod-network-cidr parameter is necessary when using calico CNI plugin
+    kubeadm init --pod-network-cidr=192.168.0.0/16
 
 
 Wait for the command to complete.  The command will write manifests to
@@ -143,7 +144,7 @@ scheduling pods on the master node too:
 
 Then deploy CNI networking plugin, for example Calico:
 
-    kubectl apply -f http://docs.projectcalico.org/v2.3/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml --kubeconfig /etc/kubernetes/admin.conf
+    kubectl apply -f http://docs.projectcalico.org/v2.4/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml --kubeconfig /etc/kubernetes/admin.conf
 
 
 Run `kubectl get nodes --kubeconfig /etc/kubernetes/admin.conf` and
