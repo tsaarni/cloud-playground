@@ -1,0 +1,14 @@
+- name: ensure docker signing key is installed
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: ensure docker repo is configured
+  apt_repository:
+    repo: 'deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution|lower }} {{ ansible_distribution_release|lower }} stable'
+    filename: docker
+    state: present
+
+- name: ensure docker package is installed
+  package:
+    name: docker-ce
