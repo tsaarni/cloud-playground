@@ -1,0 +1,48 @@
+#
+# This is a simple demo service for testing Kubernetes installation.
+# It listens to echo TCP port (port 7) and echoes back anything sent to it.
+#
+# Install the service by running
+#
+#     kubectl apply -f manifests/echo-service.yml
+#
+# Start another container where you can test that network communication works
+#
+#     kubectl run --rm -it --image alpine alpine -- ash
+#
+# Use the container to connect to echo service
+#
+#     telnet echo 6
+#
+# All lines written to telnet connection should be echoed back.
+# You can quit telnet by pressing ctrl-d.
+#
+
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: echo
+spec:
+  template:
+    metadata:
+      labels:
+        app: echo
+    spec:
+      containers:
+      - name: alpine
+        image: alpine:latest
+        command:
+          - "/bin/sh"
+        args:
+          - "-c"
+          - "while true; do nc -l -p 7 -e cat; done"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo
+spec:
+  selector:
+    app: echo
+  ports:
+    - port: 7
