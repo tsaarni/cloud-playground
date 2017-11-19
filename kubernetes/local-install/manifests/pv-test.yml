@@ -1,0 +1,65 @@
+#
+# This K8s manifest is for testing persistent volumes that are
+# provided by https://rook.io/.  It assumes that Rook has been
+# installed successfully.
+#
+# First create a persistent volume claim and a pod that consumes it
+#
+#     kubectl apply -f manifests/pv-test.yml
+#
+# See that PV got created
+#
+#     kubectl get pv
+#
+# Write something to the PV which is mounted to path `/pv` in the pod
+#
+#     kubectl exec -it test-pv-pod -- ash -c "echo hello > /pv/hello"
+#
+# Delete and recreate the pod.
+#
+#     kubectl delete pod test-pv-pod
+#     kubectl apply -f manifests/pv-test.yml
+#
+# Note that the PV claim object was not deleted and it remains
+# unchanged by the `kubectl apply` command.  Check that the file we
+# wrote in the PV remains there:
+#
+#     kubectl exec -it test-pv-pod -- ash -c "cat /pv/hello"
+#
+# To remote the pv-test run:
+#
+#     kubectl delete -f  manifests/pv-test.yml
+#
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: test-pv-claim
+spec:
+  storageClassName: rook-block
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: test-pv-pod
+spec:
+  volumes:
+    - name: test-pv-storage
+      persistentVolumeClaim:
+       claimName: test-pv-claim
+  containers:
+    - name: test-pv-container
+      image: alpine
+      command:
+        - "/bin/sh"
+      args:
+        - "-c"
+        - "sleep 99999999"
+      volumeMounts:
+        - mountPath: "/pv"
+          name: test-pv-storage

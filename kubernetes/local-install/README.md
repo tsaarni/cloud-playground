@@ -125,7 +125,7 @@ Install the packages
 In this document the `kubeadm` is used for deployment.  Execute
 following command as root:
 
-    # the pod-network-cidr parameter is necessary when using calico CNI plugin
+    # the pod-network-cidr parameter is necessary using when calico CNI plugin
     kubeadm init --pod-network-cidr=192.168.0.0/16
 
 
@@ -136,28 +136,35 @@ which was installed as .deb package, polls this directory for new
 manifests.  It will take a while for it to download and start the
 containers.
 
-For single-node installation, un-taint the master node to enable
-scheduling pods on the master node too:
-
-    kubectl taint nodes --all node-role.kubernetes.io/master- --kubeconfig /etc/kubernetes/admin.conf
-
-
-Then deploy CNI networking plugin, for example Calico:
-
-    kubectl apply -f http://docs.projectcalico.org/v2.4/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml --kubeconfig /etc/kubernetes/admin.conf
-
-
-Run `kubectl get nodes --kubeconfig /etc/kubernetes/admin.conf` and
-wait for the node to change to `Ready` status.
-
-Finally copy `/etc/kubernetes/admin.conf` to your home directory:
+Copy `/etc/kubernetes/admin.conf` to your home directory:
 
     cp /etc/kubernetes/admin.conf ~/.kube/config
 
 
 This will allow kubectl to work with the newly created cluster without
-the need to explicitely give --kubeconfig in each command..
+the need to explicitely give admin config file path with --kubeconfig
+in each command..
 
+For single-node installation, un-taint the master node to enable
+scheduling pods on the master node too:
+
+    kubectl taint nodes --all node-role.kubernetes.io/master-
+
+
+Then deploy CNI networking plugin, for example Calico:
+
+    kubectl apply -f http://docs.projectcalico.org/v2.4/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml
+
+Run `kubectl get nodes` and wait for the node to change to `Ready`
+status.
+
+You may also check
+[the documentation](https://docs.projectcalico.org/latest/getting-started/kubernetes/installation/hosted/kubeadm/)
+for the latest version of Calico.
+
+Final step is to verify successful installation by deploying a test
+service according to instructions in file
+[manifests/echo-service.yml](manifests/echo-service.yml).
 
 
 ## Optional: Adding worker nodes to the cluster
@@ -185,6 +192,38 @@ Run `kubectl get nodes` and wait until the status shows `Ready`.  It
 will take a while for the worker to download and start the Kubernetes
 containers.
 
+
+## Optional: Add persistent volume storage
+
+[Rook](https://rook.io/) provides an easy way to self-host
+[Ceph](https://ceph.com/) distributed storage on the same Kubernetes
+cluster as you run your workload.  This example shows how to deploy
+Rook on a cluster with at least three worker nodes:
+
+    git clone https://github.com/rook/rook.git
+    cd rook/cluster/examples/kubernetes/
+
+    # deploy rook operator
+    kubectl create -f rook-operator.yaml
+
+    # wait until three rook-agents have started
+    kubectl -n rook-system get pod --watch
+
+    # deploy root cluster
+    kubectl create -f rook-cluster.yaml
+
+    # wait until three rook-ceph-mons and rook-ceph-osds have started
+    kubectl -n rook get pod --watch
+
+    # create storage class
+    kubectl create -f rook-storageclass.yaml
+
+See
+[full instructions](https://rook.io/docs/rook/master/kubernetes.html)
+on Rook web site for more information.
+
+See instructions in [manifests/pv-test.yml](manifests/pv-test.yml) to
+test the rook-block storage class.
 
 
 ## Upgrade
@@ -215,8 +254,6 @@ Then upgrade the containers
     kubectl taint nodes --all node-role.kubernetes.io/master-  --kubeconfig /etc/kubernetes/admin.conf
 
 
-
-
 ## Remove installation
 
 Execute following to remove Kubernetes:
@@ -227,7 +264,6 @@ Execute following to remove Kubernetes:
     # Assuming Calico CNI plugin was installed:
     rm -r /opt/cni/bin/
     rm -r /var/etcd/calico-data/
-
 
 
 ## Errors and workarounds

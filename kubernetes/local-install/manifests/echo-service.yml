@@ -17,6 +17,10 @@
 # All lines written to telnet connection should be echoed back.
 # You can quit telnet by pressing ctrl-d.
 #
+# To remove the echo-service
+#
+#     kubectl delete -f manifests/echo-service.yml
+#
 
 apiVersion: apps/v1beta1
 kind: Deployment
