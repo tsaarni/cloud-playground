@@ -1,8 +1,8 @@
 {
-    "CN": "vault",
+    "CN": "myserver",
     "Hosts": [
-        "vault.svc.cluster.local",
-        "vault"
+        "myserver.svc.cluster.local",
+        "myserver"
     ],
     "key": {
         "algo": "ecdsa",
