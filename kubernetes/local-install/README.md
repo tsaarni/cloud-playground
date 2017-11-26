@@ -193,37 +193,14 @@ will take a while for the worker to download and start the Kubernetes
 containers.
 
 
-## Optional: Add persistent volume storage
+## Optional Features
 
-[Rook](https://rook.io/) provides an easy way to self-host
-[Ceph](https://ceph.com/) distributed storage on the same Kubernetes
-cluster as you run your workload.  This example shows how to deploy
-Rook on a cluster with at least three worker nodes:
+See [README-options.md](README-options.md) for following features:
 
-    git clone https://github.com/rook/rook.git
-    cd rook/cluster/examples/kubernetes/
+* self-hosted persistent volume storage
+* private docker registry
+* helm
 
-    # deploy rook operator
-    kubectl create -f rook-operator.yaml
-
-    # wait until three rook-agents have started
-    kubectl -n rook-system get pod --watch
-
-    # deploy root cluster
-    kubectl create -f rook-cluster.yaml
-
-    # wait until three rook-ceph-mons and rook-ceph-osds have started
-    kubectl -n rook get pod --watch
-
-    # create storage class
-    kubectl create -f rook-storageclass.yaml
-
-See
-[full instructions](https://rook.io/docs/rook/master/kubernetes.html)
-on Rook web site for more information.
-
-See instructions in [manifests/pv-test.yml](manifests/pv-test.yml) to
-test the rook-block storage class.
 
 
 ## Upgrade
