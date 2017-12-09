@@ -1,0 +1,59 @@
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: vault-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: vault
+spec:
+  template:
+    metadata:
+      labels:
+        app: vault-app
+    spec:
+      containers:
+      - name: vault-container
+        image: vault:0.9.0
+        imagePullPolicy: Never
+        securityContext:
+          capabilities:
+            add:
+              - IPC_LOCK
+        volumeMounts:
+          - name: vault-storage
+            mountPath: /var/lib/vault
+          - name: vault-cert
+            mountPath: /var/run/secrets/vault-cert
+            readOnly: true
+          - name: vault-config
+            mountPath: /etc/vault
+            readOnly: true
+      volumes:
+      - name: vault-storage
+        persistentVolumeClaim:
+          claimName: vault-pvc
+      - name: vault-config
+        configMap:
+          name: vault-config
+      - name: vault-cert
+        secret:
+          secretName: vault-cert
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vault
+spec:
+  selector:
+    app: vault-app
+  ports:
+    - port: 8200

@@ -5,5 +5,5 @@ listener "tcp" {
 }
 
 storage "file" {
-    path = "/vault/file"
+    path = "/var/lib/vault"
 }

@@ -1,13 +1,19 @@
-FROM alpine:3.6
 
-WORKDIR /tmp
+# https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices
+# https://github.com/gliderlabs/docker-alpine/blob/master/docs/usage.md
 
-RUN apk --no-cache add ca-certificates curl unzip && \
+FROM alpine:3.7
+
+RUN apk --no-cache add --virtual build-dependencies ca-certificates curl unzip libcap && \
     curl -s https://releases.hashicorp.com/vault/0.9.0/vault_0.9.0_linux_amd64.zip -o vault.zip && \
-    unzip vault.zip
+    unzip vault.zip && \
+    rm vault.zip && \
+    mv vault /usr/bin/vault && \
+    setcap cap_ipc_lock=+ep /usr/bin/vault && \
+    addgroup -S vault && adduser -S -g vault vault && \
+    apk del build-dependencies
 
 
-FROM scratch
+USER vault
 
-COPY --from=0 /tmp/vault /vault
-CMD ["/vault", "server", "-config=/etc/vault/"]
+CMD ["/usr/bin/vault", "server", "-config=/etc/vault/"]
