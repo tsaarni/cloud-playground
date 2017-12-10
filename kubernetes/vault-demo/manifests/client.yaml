@@ -1,0 +1,18 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: client
+spec:
+  template:
+    metadata:
+      labels:
+        app: client
+    spec:
+      containers:
+      - name: client
+        image: client:1.0.0
+        command:
+          - "/bin/sleep"
+        args:
+          - "9999999"
+      serviceAccountName: vault-auth

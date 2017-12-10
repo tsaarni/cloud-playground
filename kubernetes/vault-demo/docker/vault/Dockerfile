@@ -7,6 +7,7 @@ RUN apk --no-cache add --virtual build-dependencies ca-certificates curl unzip l
     rm vault.zip && \
     mv vault /usr/bin/vault && \
     setcap cap_ipc_lock=+ep /usr/bin/vault && \
-    apk del build-dependencies
+    apk del build-dependencies && \
+    apk --no-cache add httpie
 
 CMD ["/usr/bin/vault", "server", "-config=/etc/vault/"]
