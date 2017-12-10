@@ -8,7 +8,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
+      storage: 100Mi
 ---
 apiVersion: apps/v1beta1
 kind: Deployment
@@ -24,6 +24,11 @@ spec:
       - name: vault-container
         image: vault:0.9.0
         imagePullPolicy: Never
+        livenessProbe:
+          httpGet:
+            path: /v1/sys/health?uninitcode=200&sealedcode=200
+            port: 8200
+            scheme: HTTPS
         securityContext:
           capabilities:
             add:

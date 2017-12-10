@@ -1,7 +1,4 @@
 
-# https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices
-# https://github.com/gliderlabs/docker-alpine/blob/master/docs/usage.md
-
 FROM alpine:3.7
 
 RUN apk --no-cache add --virtual build-dependencies ca-certificates curl unzip libcap && \
@@ -10,10 +7,6 @@ RUN apk --no-cache add --virtual build-dependencies ca-certificates curl unzip l
     rm vault.zip && \
     mv vault /usr/bin/vault && \
     setcap cap_ipc_lock=+ep /usr/bin/vault && \
-    addgroup -S vault && adduser -S -g vault vault && \
     apk del build-dependencies
-
-
-USER vault
 
 CMD ["/usr/bin/vault", "server", "-config=/etc/vault/"]

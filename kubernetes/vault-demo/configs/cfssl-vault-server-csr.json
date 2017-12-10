@@ -1,6 +1,6 @@
 {
-  "CN": "vault.local",
+  "CN": "vault",
   "Hosts": [
-    "vault.local"
+    "vault"
   ]
 }
