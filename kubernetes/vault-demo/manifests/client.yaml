@@ -1,3 +1,8 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-client
+---
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
@@ -15,4 +20,4 @@ spec:
           - "/bin/sleep"
         args:
           - "99999999"
-      serviceAccountName: vault-auth
+      serviceAccountName: vault-client

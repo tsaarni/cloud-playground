@@ -133,11 +133,7 @@ Create role and associate it to a policy
     http -v --verify=/run/secrets/kubernetes.io/serviceaccount/ca.crt \
     POST https://localhost:8200/v1/auth/kubernetes/role/demo-role \
     "X-Vault-Token: $ROOT_TOKEN" \
-    bound_service_account_names=vault-auth bound_service_account_namespaces=default policies=foo-reader
-
-
-
-## Test Vault access with Service Account
+    bound_service_account_names=vault-client bound_service_account_namespaces=default policies=foo-reader
 
 Create two secrets `secret/foo` and `secret/bar`
 
@@ -151,6 +147,8 @@ Create two secrets `secret/foo` and `secret/bar`
     "X-Vault-Token: $ROOT_TOKEN" \
     mysecret=bar
 
+
+## Access Vault with Kubernetes Service Account
 
 Create client deployment and connect to it
 
