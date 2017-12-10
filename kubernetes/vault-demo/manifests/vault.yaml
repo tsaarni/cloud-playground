@@ -1,15 +1,4 @@
 ---
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: vault-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 100Mi
----
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
@@ -41,7 +30,7 @@ spec:
     spec:
       containers:
       - name: vault-container
-        image: vault:0.9.0
+        image: demo-vault:0.9.0
         imagePullPolicy: Never
         livenessProbe:
           httpGet:

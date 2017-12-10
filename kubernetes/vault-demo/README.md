@@ -9,11 +9,19 @@ To enable Kubernetes CA in minikube installation, start it by running
 
 ## Preparations
 
-Build container by following instructions in [docker/README.md](docker/README.md)
+Build containers by running following
+
+    # run this if using minikube as target
+    eval $(minikube docker-env)
+
+    docker build -t demo-vault:0.9.0 docker/vault
+    docker build -t demo-client:1.0.0 docker/client
+
 
 Generate server certificate for Vault
 
-    # install cfssl tools to generate key and CSR
+    # compile cfssl tools to generate key and CSR
+    # alternatively download pre-compiled binaries from https://pkg.cfssl.org/
     go get -v -u github.com/cloudflare/cfssl/cmd/...
 
     # generate private key and certificate signing request for Vault
@@ -51,6 +59,10 @@ Create secret for Vault HTTPS certificate and private key
     kubectl create secret generic vault-cert --from-file=vault.pem --from-file=vault-key.pem
     kubectl get secret vault-cert -o json | jq .
 
+
+Create persistent volume
+
+    kubectl apply -f manifests/vault-pvc.yaml
 
 Create deployment
 

@@ -10,9 +10,9 @@ spec:
     spec:
       containers:
       - name: client
-        image: client:1.0.0
+        image: demo-client:1.0.0
         command:
           - "/bin/sleep"
         args:
-          - "9999999"
+          - "99999999"
       serviceAccountName: vault-auth
