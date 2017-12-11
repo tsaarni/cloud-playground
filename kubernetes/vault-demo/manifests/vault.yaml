@@ -31,7 +31,6 @@ spec:
       containers:
       - name: vault-container
         image: demo-vault:0.9.0
-        imagePullPolicy: Never
         livenessProbe:
           httpGet:
             path: /v1/sys/health?uninitcode=200&sealedcode=200
