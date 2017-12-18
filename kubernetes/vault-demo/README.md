@@ -21,6 +21,10 @@ containers run following commands
     docker build -t demo-vault:0.9.0 docker/vault
     docker build -t demo-client:1.0.0 docker/client
 
+In the demo the REST requests are sent manually with
+[HTTPie](https://httpie.org/) HTTP client, which is included in both
+of the containers. HTTPie is similar to curl, but it supports JSON
+natively.
 
 ## Generate Certificate for Vault
 
