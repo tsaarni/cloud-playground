@@ -7,8 +7,9 @@ provider "libvirt" {
 
 # create network
 resource "libvirt_network" "network" {
-   name = "network"
-   addresses = ["10.0.1.0/24"]
+  name = "network"
+  addresses = ["10.0.1.0/24"]
+  autostart = true
 }
 
 # create cloudinit .iso
@@ -20,14 +21,15 @@ resource "libvirt_cloudinit" "cloudinit" {
 # create disks for VMs
 resource "libvirt_volume" "volume" {
   name   = "volume-ubuntu-${count.index}"
-  source = "ubuntu-16.04-server-cloudimg-amd64-disk1.img"
+  source = "xenial-server-cloudimg-amd64-disk1.img"
   count  = 4
 }
 
 # create VMs
 resource "libvirt_domain" "domain" {
   name      = "domain-ubuntu-${count.index}"
-  memory    = "1024"
+  memory    = "2048"
+  #autostart = true
   cloudinit = "${libvirt_cloudinit.cloudinit.id}"
   count     = 4
   console {
@@ -51,7 +53,3 @@ resource "libvirt_domain" "domain" {
 
 }
 
-
-output "ip" {
-  value = ["${libvirt_domain.domain.*.network_interface.0.addresses.0}"]
-}
