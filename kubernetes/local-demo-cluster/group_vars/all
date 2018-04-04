@@ -1,0 +1,2 @@
+cni_plugin_manifest_url: https://docs.projectcalico.org/v3.0/getting-started/kubernetes/installation/hosted/kubeadm/1.7/calico.yaml
+master_hostname: kubernetes-1

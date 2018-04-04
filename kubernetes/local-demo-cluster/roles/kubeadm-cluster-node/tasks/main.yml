@@ -1,0 +1,9 @@
+---
+- name: check if kubeadm cluster is already created
+  stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: result
+
+- name: call kubeadm join to configure node
+  shell: "kubeadm join {{hostvars[master_hostname]['ansible_default_ipv4']['address']}}:6443 --token {{hostvars[master_hostname]['kubeadm_token'].stdout}} --discovery-token-unsafe-skip-ca-verification"
+  when: result.stat.exists == False

@@ -1,0 +1,22 @@
+---
+- name: check if kubeadm cluster is already created
+  stat:
+    path: "/etc/kubernetes/kubelet.conf"
+  register: result
+
+- name: call kubeadm init to configure master
+  shell: "kubeadm init"
+  when: result.stat.exists == False
+
+- name: get kubeadm token
+  shell: "kubeadm token list | grep default-node-token | cut -d' ' -f1"
+  register: kubeadm_token
+
+- name: apply CNI networking plugin manifest
+  shell: "kubectl --kubeconfig=/etc/kubernetes/admin.conf apply -f {{ cni_plugin_manifest_url }}"
+
+- name: fetch admin.conf from master to local file $PWD/admin.conf
+  fetch:
+    src: "/etc/kubernetes/admin.conf"
+    dest: "admin.conf"
+    flat: yes

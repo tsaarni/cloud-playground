@@ -1,0 +1,19 @@
+---
+- name: ensure docker signing key is installed
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: ensure docker repo is configured
+  apt_repository:
+    repo: 'deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution|lower }} {{ ansible_distribution_release|lower }} stable'
+    filename: docker
+    state: present
+
+- name: find latest supperted version of the docker-ce package
+  shell: apt-cache madison docker-ce | grep 17.03 | head -1 | awk '{print $3}'
+  register: docker_version
+
+- name: ensure docker package is installed
+  package:
+    name: 'docker-ce={{ docker_version.stdout }}'

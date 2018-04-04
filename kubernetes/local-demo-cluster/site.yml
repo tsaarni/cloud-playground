@@ -1,0 +1,13 @@
+---
+- hosts: all
+  roles:
+    - docker
+    - kubernetes
+
+- hosts: kubernetes-1
+  roles:
+    - kubeadm-cluster-master
+
+- hosts: all:!kubernetes-1
+  roles:
+    - kubeadm-cluster-node
