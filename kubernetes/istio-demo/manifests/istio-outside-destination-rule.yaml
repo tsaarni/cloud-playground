@@ -1,0 +1,10 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+ name: "outside"
+ namespace: "inside"
+spec:
+ host: "*.outside.svc.cluster.local"
+ trafficPolicy:
+   tls:
+     mode: DISABLE
