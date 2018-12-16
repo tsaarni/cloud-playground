@@ -10,7 +10,9 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/minikube/master/de
 
 
 # install helm
-curl -s https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
+curl -L -s https://storage.googleapis.com/kubernetes-helm/helm-v2.11.0-linux-amd64.tar.gz -o helm.tar.gz
+tar zxf helm.tar.gz
+cp -a linux-amd64/helm /usr/local/bin/helm
 
 # create service account and role-binding for helm
 kubectl apply -f - <<EOF

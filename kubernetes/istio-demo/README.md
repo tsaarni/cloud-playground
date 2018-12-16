@@ -43,40 +43,64 @@ To remove the VM run following on host OS:
 
 
 
-## Build and deploy demo-services
+## Demo
 
-Build container image with the demo services included.
-
-    docker build -t httpbin:latest docker/httpbin
-    docker build -t demo:latest docker/demo
+The demo can be executed by running the listed commands inside Virtualbox.
 
 
-Create namespaces `inside` and `outside`.  The first is where
-automatic istio sidecar injection is enabled and second is hosting
-microservices outside service mesh
+
+### Istio ingress gateway
+
+Store the ingress gateway certificate and key in a Secret
+
+    kubectl create -n istio-system secret tls istio-ingressgateway-certs --key gateway-key.pem --cert gateway.pem
 
 
-    kubectl create ns inside
-    kubectl create ns outside
+Run service that is exposed externally via Istio Gateway
 
-    kubectl label namespace inside istio-injection=enabled
+    kubectl -n inside apply -f manifests/istio-expose-external.yaml
 
 
-Declare [authentication policy to enable mutual TLS](https://istio.io/docs/tasks/security/authn-policy/)
+Make request via the Gateway
+
+    http -v --verify server-root.pem https://host1.external.com:31390/status/418 host:host1.external.com
+
+
+See that the internal traffic is unprotected
+
+    # capture traffic from httpbin pod
+    sudo tcpdump -vvvv -s 0 -A -i any -n src port 80 and host $(kubectl -n inside get pod -l app=httpbin -o jsonpath={.items..podIP})
+
+    # make request via gateway
+    http -v --verify server-root.pem https://host1.external.com:31390/status/418 host:host1.external.com
+
+
+Enable mutual TLS policy in Istio
 
     kubectl apply -f manifests/istio-default-mtls-policy.yaml
 
 
-Deploy the microservices.  Note that the Services must have
-[named ports](https://istio.io/docs/setup/kubernetes/spec-requirements/)
-in order to work with Istio.
+Repeat the request and see that traffic is now protected
 
-    kubectl -n inside  apply -f manifests/httpbin.yaml
-    kubectl -n outside apply -f manifests/httpbin.yaml
-    kubectl -n inside  apply -f manifests/client.yaml
-    kubectl -n outside apply -f manifests/client.yaml
-    kubectl -n inside  apply -f manifests/echo.yaml
-    kubectl -n outside apply -f manifests/echo.yaml
+    # capture traffic from httpbin pod
+    sudo tcpdump -vvvv -s 0 -A -i any -n src port 80 and host $(kubectl -n inside get pod -l app=httpbin -o jsonpath={.items..podIP})
+
+    # make request via gateway
+    http -v --verify server-root.pem https://host1.external.com:31390/status/418 host:host1.external.com
+
+
+
+Delete the demo
+
+    kubectl delete -f manifests/istio-default-mtls-policy.yaml
+    kubectl -n inside delete -f manifests/istio-expose-external.yaml
+
+
+### Internal
+
+
+TODO
+
 
 
 Start shell on the client pods
@@ -106,23 +130,7 @@ To show Istio's TLS authentication rules
     istioctl authn tls-check httpbin.inside.svc.cluster.local
 
 
-## Certificates
-
-Use following commands to generate certificates
-
-    cfssl genkey -initca configs/cfssl-csr-root-ca-server.json | cfssljson -bare server-root
-    cfssl certinfo -cert server-root.pem
-
-    cfssl genkey -initca configs/cfssl-csr-root-ca-client.json | cfssljson -bare client-root
-    cfssl certinfo -cert client-root.pem
-
-    cfssl gencert -ca server-root.pem -ca-key server-root-key.pem configs/cfssl-csr-endentity-httpbin.json | cfssljson -bare httpbin
-    cfssl certinfo -cert httpbin.pem
-
-    cfssl gencert -ca client-root.pem -ca-key client-root-key.pem configs/cfssl-csr-endentity-client.json | cfssljson -bare client
-    cfssl certinfo -cert httpbin.pem
-
-
 ## References
 
 * https://istio.io/docs/reference/config/
+* explanation for Istio networking https://blog.sebastian-daschner.com/entries/istio-networking-api-explained and https://www.youtube.com/watch?v=qQsZ5Azzqec

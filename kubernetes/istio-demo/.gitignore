@@ -1,0 +1,4 @@
+certs
+admin.conf
+.*
+*.log

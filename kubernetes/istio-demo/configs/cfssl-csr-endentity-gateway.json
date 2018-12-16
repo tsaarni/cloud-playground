@@ -1,0 +1,7 @@
+{
+  "CN": "gateway",
+  "Hosts": [
+    "host1.external.com",
+    "host2.external.com"
+  ]
+}
