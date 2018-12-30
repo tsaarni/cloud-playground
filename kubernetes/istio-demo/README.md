@@ -20,8 +20,8 @@ Run following to start the VM:
     vagrant up
 
 
-The command will automatically download Ubuntu 16.04 image, launch it,
-and then install Kubernetes and Istio. After the installation has
+The command will automatically download Ubuntu image, launch it, and
+then install Kubernetes and Istio. After the installation has
 succeeded you can take snapshot of the VM in order to easily revert
 into initial state after the installation.
 
@@ -74,4 +74,3 @@ To show Istio's TLS authentication rules
 
 * https://istio.io/docs/reference/config/
 * The Life of a Packet Through Istio - Deep dive https://mt165.co.uk/speech/life-of-a-packet-istio-devoxx/, https://www.youtube.com/watch?v=cB611FtjHcQ
-* Istio networking API explained https://blog.sebastian-daschner.com/entries/istio-networking-api-explained, https://www.youtube.com/watch?v=qQsZ5Azzqec

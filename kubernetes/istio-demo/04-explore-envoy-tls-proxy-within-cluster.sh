@@ -1,8 +1,10 @@
 #!/bin/bash -ex
 #
-# Description:
+# Description
 #
-
+# Explore various ways to access the service from host (worker node),
+# to demonstrate how Istio TLS is implemented.
+#
 
 # create resources
 kubectl apply -f manifests/04-explore-envoy-tls-proxy-within-cluster.yaml

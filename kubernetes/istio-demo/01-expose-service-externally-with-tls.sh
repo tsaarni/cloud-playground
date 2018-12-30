@@ -2,10 +2,17 @@
 #
 # Description
 #
-# Run a service inside service mesh and access it using TLS which is
-# terminated at Istio ingress gateway.  The connection between gateway
-# and pod is not protected by TLS.
+# Run a service inside service mesh and access it with external client
+# using TLS which is terminated at Istio ingress gateway.
 #
+# The connection between gateway and pod is not yet protected by Istio
+# TLS in this demo, demonstrate this by using tcpdump.
+#
+# Note that in future version of Istio information about client
+# certificate can be forwarded by Envoy, terminating the TLS
+# connection, to the service in X-Forwarded-Client-Cert header for
+# e.g. logging purposes.
+# https://github.com/istio/istio/issues/8263
 
 # create resources
 kubectl apply -f manifests/01-expose-service-externally-with-tls.yaml

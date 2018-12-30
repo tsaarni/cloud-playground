@@ -1,10 +1,12 @@
 #!/bin/bash -ex
 #
-# Description:
+# Description
 #
-# Run a service inside service mesh and access it using TLS which is
-# terminated at Istio ingress gateway.  The connection between gateway
-# and pod is also protected by TLS.
+# Run a service inside service mesh and access it with external client
+# using TLS which is terminated at Istio ingress gateway.
+#
+# The connection between gateway and pod is also protected by TLS by
+# instantiating global mesh policy.
 #
 
 # create resources

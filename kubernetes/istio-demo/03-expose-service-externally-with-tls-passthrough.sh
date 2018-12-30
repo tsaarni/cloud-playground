@@ -2,9 +2,11 @@
 #
 # Description
 #
+# Run a service inside service mesh and access it with external
+# client. Istio is configured in TLS passthrough mode. The service
+# terminates TLS itself and therefore can see the client certificate
+# from external client.
 #
-
-
 
 # create resources
 kubectl apply -f manifests/03-expose-service-externally-with-tls-passthrough.yaml

@@ -2,8 +2,11 @@
 #
 # Description
 #
-# Mixed use case where client within service mesh calls a service that
-# is located outside of the service mesh.
+# Demonstrate mixed use case where client within service mesh calls a service
+# located outside of the service mesh.
+#
+# There is two services outside the mesh: one exposing HTTPS interface
+# and another exposing HTTP interface.
 #
 
 # Create resources
