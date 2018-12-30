@@ -1,0 +1,83 @@
+
+# create namespace `inside-mesh` and enable automatic istio sidecar
+# injection on pods deployed in this namespace
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    istio-injection: enabled
+  name: inside-mesh
+
+
+
+# Create mesh-wide policy to allow only mutual TLS connections
+# Note that MeshPolicy is not namespaced resource
+---
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "MeshPolicy"
+metadata:
+  name: "default"
+spec:
+  peers:
+  - mtls: {}
+
+
+# TODO: per namespace policies? https://istio.io/docs/reference/config/istio.authentication.v1alpha1/#Policy
+
+
+# any traffic destined to *.local will
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: default
+  namespace: inside-mesh
+spec:
+  host: "*.local"  # limit to any hosts running within cluster
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+
+
+# deploy httpbin service that implements REST API at port 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin
+  namespace: inside-mesh
+  labels:
+    app: httpbin
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  template:
+    metadata:
+      labels:
+        app: httpbin
+    spec:
+      containers:
+      - name: httpbin
+        image: httpbin
+        imagePullPolicy: Never
+        ports:
+          - containerPort: 80
+
+
+# expose the REST API as a service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  namespace: inside-mesh
+  labels:
+    app: httpbin
+spec:
+  ports:
+  - name: http
+    port: 80
+  selector:
+    app: httpbin

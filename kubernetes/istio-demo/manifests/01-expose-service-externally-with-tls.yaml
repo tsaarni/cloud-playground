@@ -1,0 +1,100 @@
+# Create namespace `inside-mesh` and enable automatic istio sidecar
+# injection for pods deployed in this namespace
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    istio-injection: enabled
+  name: inside-mesh
+
+
+# Deploy httpbin service that implements REST API at port 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin
+  namespace: inside-mesh
+  labels:
+    app: httpbin
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  template:
+    metadata:
+      labels:
+        app: httpbin
+    spec:
+      containers:
+      - name: httpbin
+        image: httpbin
+        imagePullPolicy: Never
+        ports:
+          - containerPort: 80
+
+
+# Expose the REST API as a service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  namespace: inside-mesh
+  labels:
+    app: httpbin
+spec:
+  ports:
+  - name: http
+    port: 80
+  selector:
+    app: httpbin
+
+
+# Configure gateway, which acts as a loadbalancer operating at the
+# edge of mesh
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: mygateway
+  namespace: inside-mesh
+spec:
+  selector:
+    istio: ingressgateway # use istio default ingress gateway
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      serverCertificate: /etc/istio/ingressgateway-certs/tls.crt # istio-ingressgateway pod will use these certificates towards external clients
+      privateKey: /etc/istio/ingressgateway-certs/tls.key
+    hosts:
+    - "host1.external.com" # matched to host in HTTP header, which is further used for routing decision by the configuration of VirtualService
+
+
+# Configure L7 HTTP URL based routing from gateway to the actual
+# Service
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: httpbin
+  namespace: inside-mesh
+spec:
+  hosts:
+  - "host1.external.com"
+  gateways:
+  - mygateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        port:
+          number: 80
+        host: httpbin # interpreted as httpbin.inside-mesh.svc.cluster.local

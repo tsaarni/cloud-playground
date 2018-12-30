@@ -5,4 +5,4 @@ RUN apk --update add python3 && \
     apk del build-dependencies && \
     rm -rf /root/.cache /var/cache/apk/*
 EXPOSE 80
-CMD ["gunicorn", "-b", "0.0.0.0:80", "httpbin:app"]
+CMD ["gunicorn", "-b", "0.0.0.0:80", "--access-logfile", "-", "httpbin:app"]

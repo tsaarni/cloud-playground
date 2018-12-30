@@ -40,7 +40,11 @@ apt-get install -y kubeadm=$kubernetes_deb_version kubelet=$kubernetes_deb_versi
 # intialize kubernetes master
 #   --apiserver-cert-extra-sans is needed since we want to use kubectl with virtualbox NAT port forward
 #   --pod-network-cidr=192.168.0.0/16 is needed for calico
-kubeadm init --apiserver-cert-extra-sans 127.0.0.1 --pod-network-cidr=192.168.0.0/16
+#kubeadm init --apiserver-cert-extra-sans 127.0.0.1 --pod-network-cidr=192.168.0.0/16
+#  Change range of NodePort https://github.com/kubernetes/kubeadm/issues/122
+
+# use command "kubeadm config print-default" to print all config file parameters
+kubeadm init --config /vagrant/configs/kubeadm-config.yaml
 
 # install CNI networking plugin
 kubectl --kubeconfig=/etc/kubernetes/admin.conf apply -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
@@ -54,6 +58,7 @@ cp /etc/kubernetes/admin.conf /vagrant
 mkdir ~vagrant/.kube
 cp /etc/kubernetes/admin.conf ~vagrant/.kube/config
 chown -R vagrant:vagrant ~vagrant/.kube
+echo "source <(kubectl completion bash)" >> ~vagrant/.bashrc
 
 # allow vagrant-user to run docker without sudo
 usermod -a -G docker vagrant

@@ -38,3 +38,6 @@ EOF
 
 # install tiller
 helm init --wait --service-account helm
+
+
+echo "source <(helm completion bash)" >> ~vagrant.bashrc

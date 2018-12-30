@@ -1,6 +1,6 @@
 {
   "CN": "httpbin",
   "Hosts": [
-      "httpbin", "httpbin-encrypted", "httpbin-authenticated"
+      "httpbin.outside-mesh", "httpbin.external.com"
   ]
 }

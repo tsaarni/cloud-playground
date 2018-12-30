@@ -1,7 +1,6 @@
 
 # Istio demo environment
 
-
 ## Prerequisites
 
 Download [Vagrant](https://www.vagrantup.com/downloads.html),
@@ -22,115 +21,57 @@ Run following to start the VM:
 
 
 The command will automatically download Ubuntu 16.04 image, launch it,
-and then install Kubernetes and Istio.
+and then install Kubernetes and Istio. After the installation has
+succeeded you can take snapshot of the VM in order to easily revert
+into initial state after the installation.
 
-You can either connect to the VM to use tools such as `kubectl`, `helm` and
-`docker`:
+    vagrant snapshot push
+
+
+To restore the state to latest snapshot use
+
+    vagrant snapshot pop
+
+
+The demos can be executed by running the scripts inside Virtualbox.
+Connect to vagrant box and change to workdir:
 
     vagrant ssh
+    cd /vagrant
 
 
-or alternatively you can use the tools from host OS by setting following environment
-variables (Linux and MacOS):
+Command line commands such as `kubectl`, `helm` and `docker` are
+available to be executed as user `vagrant`.
 
-    export KUBECONFIG=$PWD/admin.conf
-    export DOCKER_HOST=tcp://localhost:2375
+To stop the VM temporarily run following
+
+    vagrant halt
 
 
-To remove the VM run following on host OS:
+To remove the VM completely run following:
 
     vagrant destroy
 
 
+## Executing demos
 
-## Demo
-
-The demo can be executed by running the listed commands inside Virtualbox.
-
-
-
-### Istio ingress gateway
-
-Store the ingress gateway certificate and key in a Secret
-
-    kubectl create -n istio-system secret tls istio-ingressgateway-certs --key gateway-key.pem --cert gateway.pem
+   * [01-expose-service-externally-with-tls.sh](01-expose-service-externally-with-tls.sh)
+   * [02-expose-service-externally-with-internal-tls.sh](02-expose-service-externally-with-internal-tls.sh)
+   * [03-expose-service-externally-with-tls-passthrough.sh](03-expose-service-externally-with-tls-passthrough.sh)
+   * [04-explore-envoy-tls-proxy-within-cluster.sh](04-explore-envoy-tls-proxy-within-cluster.sh)
+   * [05-mixed-client-inside-mesh-accesses-tls-service-outside-mesh.sh](05-mixed-client-inside-mesh-accesses-tls-service-outside-mesh.sh)
 
 
-Run service that is exposed externally via Istio Gateway
-
-    kubectl -n inside apply -f manifests/istio-expose-external.yaml
-
-
-Make request via the Gateway
-
-    http -v --verify server-root.pem https://host1.external.com:31390/status/418 host:host1.external.com
-
-
-See that the internal traffic is unprotected
-
-    # capture traffic from httpbin pod
-    sudo tcpdump -vvvv -s 0 -A -i any -n src port 80 and host $(kubectl -n inside get pod -l app=httpbin -o jsonpath={.items..podIP})
-
-    # make request via gateway
-    http -v --verify server-root.pem https://host1.external.com:31390/status/418 host:host1.external.com
-
-
-Enable mutual TLS policy in Istio
-
-    kubectl apply -f manifests/istio-default-mtls-policy.yaml
-
-
-Repeat the request and see that traffic is now protected
-
-    # capture traffic from httpbin pod
-    sudo tcpdump -vvvv -s 0 -A -i any -n src port 80 and host $(kubectl -n inside get pod -l app=httpbin -o jsonpath={.items..podIP})
-
-    # make request via gateway
-    http -v --verify server-root.pem https://host1.external.com:31390/status/418 host:host1.external.com
-
-
-
-Delete the demo
-
-    kubectl delete -f manifests/istio-default-mtls-policy.yaml
-    kubectl -n inside delete -f manifests/istio-expose-external.yaml
-
-
-### Internal
-
+## TODO
 
 TODO
-
-
-
-Start shell on the client pods
-
-    kubectl -n inside  exec -it $(kubectl -n inside  get pod -l app=client -o jsonpath={.items..metadata.name}) ash
-    kubectl -n outside exec -it $(kubectl -n outside get pod -l app=client -o jsonpath={.items..metadata.name}) ash
-
-
-Test connectivity by running following on the client shells
-
-    # test http service
-    http http://httpbin.inside/ip
-    http http://httpbin.outside/ip
-
-    # test echo service
-    telnet echo.inside echo
-    telnet echo.outside echo
-
-
-To allow non-TLS traffic to services running on namespace `outside`:
-
-    kubectl apply -f manifests/istio-outside-destination-rule.yaml
-
-
 To show Istio's TLS authentication rules
 
-    istioctl authn tls-check httpbin.inside.svc.cluster.local
+    istioctl authn tls-check <HOSTNAME>
 
 
 ## References
 
 * https://istio.io/docs/reference/config/
-* explanation for Istio networking https://blog.sebastian-daschner.com/entries/istio-networking-api-explained and https://www.youtube.com/watch?v=qQsZ5Azzqec
+* The Life of a Packet Through Istio - Deep dive https://mt165.co.uk/speech/life-of-a-packet-istio-devoxx/, https://www.youtube.com/watch?v=cB611FtjHcQ
+* Istio networking API explained https://blog.sebastian-daschner.com/entries/istio-networking-api-explained, https://www.youtube.com/watch?v=qQsZ5Azzqec
