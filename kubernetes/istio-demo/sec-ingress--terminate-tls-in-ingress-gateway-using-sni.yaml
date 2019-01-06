@@ -1,4 +1,4 @@
-# Create namespace `inside-mesh` and enable automatic istio sidecar
+# Create namespace `inside-mesh` and enable automatic Istio sidecar
 # injection for pods deployed in this namespace
 ---
 apiVersion: v1
@@ -7,6 +7,33 @@ metadata:
   labels:
     istio-injection: enabled
   name: inside-mesh
+
+
+# Create mesh-wide policy to allow only mutual TLS connections.
+# Note that MeshPolicy is not namespaced resource
+---
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "MeshPolicy"
+metadata:
+  name: "default"
+spec:
+  peers:
+  - mtls: {}
+
+
+# Traffic destined to *.local (any service within the cluster) will be
+# put into mutually authenticated TLS pipe managed by Istio.
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: default
+  namespace: inside-mesh
+spec:
+  host: "*.local" # any service running within cluster
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
 
 
 # Deploy httpbin service that implements REST API at port 80
@@ -69,12 +96,17 @@ spec:
       name: https
       protocol: HTTPS
     tls:
-      mode: SIMPLE
+      mode: SIMPLE  # terminate TLS in gateway but use only server authentication
+
+      # istio-ingressgateway pod mounts a certificate and key from Secret
+      # that was pre-provisioned in provisioning/prepare-demo.sh
       serverCertificate: /etc/istio/ingressgateway-certs/tls.crt # istio-ingressgateway pod will use these certificates towards external clients
       privateKey: /etc/istio/ingressgateway-certs/tls.key
     hosts:
-    - "host1.external.com" # matched to host in HTTP header, which is further used for routing decision by the configuration of VirtualService
-
+    # request is allowed to following servernames, matching is done
+    # using TLS SNI field in incoming TLS connection
+    - "host1.external.com"
+    - "host2.external.com"
 
 # Configure L7 HTTP URL based routing from gateway to the actual
 # Service
@@ -86,15 +118,11 @@ metadata:
   namespace: inside-mesh
 spec:
   hosts:
+  # matched to: Host HTTP header
   - "host1.external.com"
   gateways:
   - mygateway
   http:
-  - match:
-    - uri:
-        prefix: /
-    route:
+  - route:
     - destination:
-        port:
-          number: 80
-        host: httpbin # interpreted as httpbin.inside-mesh.svc.cluster.local
+        host: httpbin  # interpreted as httpbin.inside-mesh.svc.cluster.local

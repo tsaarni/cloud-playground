@@ -1,4 +1,4 @@
-# Create namespace `inside-mesh` and enable automatic istio sidecar
+# Create namespace `inside-mesh` and enable automatic Istio sidecar
 # injection for pods deployed in this namespace
 ---
 apiVersion: v1
@@ -9,7 +9,15 @@ metadata:
   name: inside-mesh
 
 
-# Create mesh-wide policy to allow only mutual TLS connections
+# Create namespace `outside-mesh` for services outside the mesh
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: outside-mesh
+
+
+# Create mesh-wide policy to allow only mutual TLS connections.
 # Note that MeshPolicy is not namespaced resource
 ---
 apiVersion: "authentication.istio.io/v1alpha1"
@@ -30,19 +38,33 @@ metadata:
   name: default
   namespace: inside-mesh
 spec:
-  host: "*.local" # any service running within cluster
+  host: "*.local"  # limit to any hosts running within cluster
   trafficPolicy:
     tls:
       mode: ISTIO_MUTUAL
 
 
-# Deploy httpbin service that implements REST API at port 443
+# Disable Istio TLS for services outside mesh
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: httpbin
+  namespace: outside-mesh
+spec:
+  host: "*.outside-mesh.svc.cluster.local"
+  trafficPolicy:
+    tls:
+      mode: DISABLE
+
+
+# Deploy httpbin service outside mesh, expose REST API over HTTPS
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: httpbin
-  namespace: inside-mesh
+  namespace: outside-mesh
   labels:
     app: httpbin
 spec:
@@ -73,17 +95,42 @@ spec:
       volumes:
       - name: httpbin-certs
         secret:
-          optional: true
           secretName: httpbin-certs
 
 
-# Expose the REST API as a service
+# Deploy sshd service outside mesh, expose SSH protocol
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sshd
+  namespace: outside-mesh
+  labels:
+    app: sshd
+spec:
+  selector:
+    matchLabels:
+      app: sshd
+  template:
+    metadata:
+      labels:
+        app: sshd
+    spec:
+      containers:
+      - name: sshd
+        image: sshd
+        imagePullPolicy: Never
+        ports:
+          - containerPort: 22
+
+
+# Expose the REST APIs as a services
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: httpbin
-  namespace: inside-mesh
+  namespace: outside-mesh
   labels:
     app: httpbin
 spec:
@@ -94,6 +141,22 @@ spec:
     app: httpbin
 
 
+# Expose the SSH as a service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sshd
+  namespace: outside-mesh
+  labels:
+    app: sshd
+spec:
+  ports:
+  - port: 22
+  selector:
+    app: sshd
+
+
 # Configure gateway, which acts as a loadbalancer operating at the
 # edge of mesh
 ---
@@ -101,7 +164,7 @@ apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
   name: mygateway
-  namespace: inside-mesh
+  namespace: outside-mesh
 spec:
   selector:
     istio: ingressgateway # use istio default ingress gateway
@@ -113,8 +176,13 @@ spec:
     tls:
       mode: PASSTHROUGH
     hosts:
-    - "httpbin.external.com"
-
+    - "*"
+  - port:
+      number: 2222  # use 2222 since 22 is already taken by the host OS
+      protocol: TCP
+      name: tcp
+    hosts:
+    - "*"
 
 # Configure TLS SNI based routing from gateway to the actual Service
 ---
@@ -122,7 +190,7 @@ apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
   name: httpbin
-  namespace: inside-mesh
+  namespace: outside-mesh
 spec:
   hosts:
   - "httpbin.external.com"
@@ -135,24 +203,28 @@ spec:
       - "httpbin.external.com"
     route:
     - destination:
-        host: httpbin # interpreted as httpbin.inside-mesh.svc.cluster.local
+        host: httpbin # interpreted as httpbin.outside-mesh.svc.cluster.local
         port:
           number: 443
 
 
-#
+# Configure port based routing from gateway to the actual Service
 ---
-#apiVersion: v1
-#kind: Pod
-#metadata:
-#  name: client
-#  namespace: inside-mesh
-#  labels:
-#    app: client
-#spec:
-#  containers:
-#  - name: client
-#    image: client
-#    imagePullPolicy: Never
-#    command: ['sh', '-c', 'http --verify=no https://httpie.inside-mesh']
-#  restartPolicy: Never
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: sshd
+  namespace: outside-mesh
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - mygateway
+  tcp:
+  - match:
+    - port: 2222
+    route:
+    - destination:
+        host: "sshd"
+        port:
+          number: 22

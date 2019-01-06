@@ -21,10 +21,6 @@ spec:
   - mtls: {}
 
 
-# TODO: per namespace policies?
-# https://istio.io/docs/reference/config/istio.authentication.v1alpha1/#Policy
-
-
 # Traffic destined to *.local (any service within the cluster) will be
 # put into mutually authenticated TLS pipe managed by Istio.
 ---
@@ -100,15 +96,29 @@ spec:
       name: https
       protocol: HTTPS
     tls:
-      mode: SIMPLE
-      serverCertificate: /etc/istio/ingressgateway-certs/tls.crt # istio-ingressgateway pod will use these certificates towards external clients
+      mode: MUTUAL  # terminate TLS in gateway, require client certificate
+
+      # istio-ingressgateway pod mounts certificate, key and client CA
+      # certificate from Secrets that were pre-provisioned in
+      # provisioning/prepare-demo.sh
+      serverCertificate: /etc/istio/ingressgateway-certs/tls.crt
       privateKey: /etc/istio/ingressgateway-certs/tls.key
+      caCertificates: /etc/istio/ingressgateway-ca-certs/client-root.pem
+
+      # Note that besides validating that client certificate is issued
+      # by a trusted CA, it provides option to whitelist clients by
+      # the SAN of client certiifcate but it does not provide option
+      # to validate e.g. CN in Subject Name.  Further documentation:
+      #
+      #   - https://istio.io/docs/reference/config/istio.networking.v1alpha3/#Server-TLSOptions
+      #   - https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/auth/cert.proto#envoy-api-msg-auth-certificatevalidationcontext
+      #
+      # subjectAltNames: <list-of-names>
     hosts:
-    - "host1.external.com" # matched to host in HTTP header, which is further used for routing decision by the configuration of VirtualService
+    - "*"  # accept any incoming request, we do not require TLS SNI to be set
 
 
-# Configure L7 HTTP URL based routing from gateway to the actual
-# Service
+# Configure routing from gateway to the actual Service
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
@@ -117,15 +127,10 @@ metadata:
   namespace: inside-mesh
 spec:
   hosts:
-  - "host1.external.com"
+  - "*"  # accept any incoming request, we do not require "Host:" HTTP header to be set
   gateways:
   - mygateway
   http:
-  - match:
-    - uri:
-        prefix: /
-    route:
+  - route:
     - destination:
-        port:
-          number: 80
-        host: httpbin # interpreted as httpbin.inside-mesh.svc.cluster.local
+        host: httpbin  # interpreted as httpbin.inside-mesh.svc.cluster.local

@@ -19,7 +19,7 @@ apt-get update
 # install dependencies
 apt-get install -y conntrack
 
-# enable remote access
+# enable docker remote access outside the VM
 mkdir -p /etc/systemd/system/docker.service.d
 cat >/etc/systemd/system/docker.service.d/override.conf <<EOF
 [Service]
@@ -38,19 +38,14 @@ kubernetes_cni_version=$(apt-cache madison kubernetes-cni | grep 0.6 | head -1 |
 apt-get install -y kubeadm=$kubernetes_deb_version kubelet=$kubernetes_deb_version kubectl=$kubernetes_deb_version kubernetes-cni=$kubernetes_cni_version
 
 # intialize kubernetes master
-#   --apiserver-cert-extra-sans is needed since we want to use kubectl with virtualbox NAT port forward
-#   --pod-network-cidr=192.168.0.0/16 is needed for calico
-#kubeadm init --apiserver-cert-extra-sans 127.0.0.1 --pod-network-cidr=192.168.0.0/16
-#  Change range of NodePort https://github.com/kubernetes/kubeadm/issues/122
-
-# use command "kubeadm config print-default" to print all config file parameters
+#   Note: use command "kubeadm config print-default" to print all config file parameters
 kubeadm init --config /vagrant/configs/kubeadm-config.yaml
 
 # install CNI networking plugin
 kubectl --kubeconfig=/etc/kubernetes/admin.conf apply -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
 kubectl --kubeconfig=/etc/kubernetes/admin.conf apply -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
 
-# allow scheduling of pods on master node
+# since we only have one node, allow scheduling of pods on master node
 kubectl --kubeconfig=/etc/kubernetes/admin.conf taint nodes --all node-role.kubernetes.io/master-
 
 # make kubernetes admin.conf available for host machine and for vagrant-user
@@ -58,12 +53,14 @@ cp /etc/kubernetes/admin.conf /vagrant
 mkdir ~vagrant/.kube
 cp /etc/kubernetes/admin.conf ~vagrant/.kube/config
 chown -R vagrant:vagrant ~vagrant/.kube
+
+# add bash completions for vagrant user
 echo "source <(kubectl completion bash)" >> ~vagrant/.bashrc
 
-# allow vagrant-user to run docker without sudo
+# add vagrant to docker group to allow running docker without sudo
 usermod -a -G docker vagrant
 
-# replace internal kubernetes api server address with localhost, so it can be accessed via virtualbox port forward
+# replace internal kubernetes api server address with localhost, so it can be accessed also outside the VM via virtualbox port forward
 sed -i 's!server: .*!server: https://127.0.0.1:6443!g' /vagrant/admin.conf
 
 # wait for the node to come up

@@ -1,0 +1,286 @@
+# Create namespace `frontend` for deploying services that will be
+# exposed to external network
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    istio-injection: enabled
+  name: frontend
+
+
+# Create namespace `backend` for deploying services that will not
+# be directly exposed to external network
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    istio-injection: enabled
+  name: backend
+
+
+# Create mesh-wide policy to allow only mutual TLS connections
+# Note that MeshPolicy is not namespaced resource
+---
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "MeshPolicy"
+metadata:
+  name: "default"
+spec:
+  peers:
+  - mtls: {}
+
+
+# Traffic destined to *.local (any service within the cluster) will be
+# put into mutually authenticated TLS pipe managed by Istio.
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: default
+  namespace: frontend
+spec:
+  host: "*.local"
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+
+
+# Enable istio authorization
+# Note that RbacConfig is namespaced resource but only single
+# mesh-wide instance should be created
+---
+apiVersion: "rbac.istio.io/v1alpha1"
+kind: RbacConfig
+metadata:
+  name: default
+  namespace: istio-system
+spec:
+  mode: 'ON'
+
+
+# Create role that allows access to pod with label app=httpbin
+---
+apiVersion: "rbac.istio.io/v1alpha1"
+kind: ServiceRole
+metadata:
+  name: httpbin-user
+  namespace: backend
+spec:
+  rules:
+  - services: ["*"]
+    methods: ["*"]
+    paths: ["/status/*","/headers"]
+    constraints:
+    - key: "destination.labels[app]"  # see constraints in https://istio.io/docs/reference/config/authorization/constraints-and-properties/
+      values: ["httpbin-restricted"]
+
+
+# Bind the role to pods running in namespace `frontend`
+---
+apiVersion: "rbac.istio.io/v1alpha1"
+kind: ServiceRoleBinding
+metadata:
+  name: httpbin-user-binding
+  namespace: backend
+spec:
+  subjects:
+  - properties:
+      source.namespace: "frontend"  # see properties in https://istio.io/docs/reference/config/authorization/constraints-and-properties/
+  roleRef:
+    kind: ServiceRole
+    name: "httpbin-user"
+
+
+# Deploy sshd service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sshd
+  namespace: frontend
+  labels:
+    app: sshd
+spec:
+  selector:
+    matchLabels:
+      app: sshd
+  template:
+    metadata:
+      labels:
+        app: sshd
+    spec:
+      containers:
+      - name: sshd
+        image: sshd
+        imagePullPolicy: Never
+        ports:
+          - containerPort: 22
+
+
+# Expose the SSH as a kubernetes Service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sshd
+  namespace: frontend
+  labels:
+    app: sshd
+spec:
+  ports:
+  - port: 22
+  selector:
+    app: sshd
+
+
+# Deploy two instances of httpbin service:
+#   - httpbin-restricted
+#   - http-blocked
+# both implementing REST API at port 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin
+  namespace: backend
+  labels:
+    app: httpbin-restricted
+spec:
+  selector:
+    matchLabels:
+      app: httpbin-restricted
+  template:
+    metadata:
+      labels:
+        app: httpbin-restricted
+    spec:
+      containers:
+      - name: httpbin
+        image: httpbin
+        imagePullPolicy: Never
+        ports:
+          - containerPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin-blocked
+  namespace: backend
+  labels:
+    app: httpbin-blocked
+spec:
+  selector:
+    matchLabels:
+      app: httpbin-blocked
+  template:
+    metadata:
+      labels:
+        app: httpbin-blocked
+    spec:
+      containers:
+      - name: httpbin
+        image: httpbin
+        imagePullPolicy: Never
+        ports:
+          - containerPort: 80
+
+
+# Deploy client pod in namespace `backend`
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client
+  namespace: backend
+  labels:
+    app: client
+spec:
+  selector:
+    matchLabels:
+      app: client
+  template:
+    metadata:
+      labels:
+        app: client
+    spec:
+      containers:
+      - name: client
+        image: client
+        imagePullPolicy: Never
+        command: ["/bin/sleep"] # run sleep so that the pod will remain running and we can "exec" into it to run http client
+        args: ["999999999"]
+
+
+# Expose the REST API as a Kubernetes Service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin-restricted
+  namespace: backend
+  labels:
+    app: httpbin-restricted
+spec:
+  ports:
+  - name: http
+    port: 80
+  selector:
+    app: httpbin-restricted
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin-blocked
+  namespace: backend
+  labels:
+    app: httpbin-blocked
+spec:
+  ports:
+  - name: http
+    port: 80
+  selector:
+    app: httpbin-blocked
+
+
+# Configure gateway, which routes SSH traffic from edge of the mesh to the
+# service running within the mesh
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: mygateway
+  namespace: frontend
+spec:
+  selector:
+    istio: ingressgateway # use istio default ingress gateway
+  servers:
+  - port:
+      number: 2222  # use 2222 since 22 is already taken by the host OS
+      protocol: TCP
+      name: tcp
+    hosts:
+    - "*"
+
+
+# Configure port based routing from gateway to the actual Service
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: sshd
+  namespace: frontend
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - mygateway
+  tcp:
+  - match:
+    - port: 2222
+    route:
+    - destination:
+        host: "sshd"
+        port:
+          number: 22

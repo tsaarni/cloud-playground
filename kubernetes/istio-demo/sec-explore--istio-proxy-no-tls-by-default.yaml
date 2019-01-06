@@ -1,0 +1,134 @@
+# Create namespace `inside-mesh` and enable automatic istio sidecar
+# injection for pods deployed in this namespace
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    istio-injection: enabled
+  name: inside-mesh
+
+
+# Deploy httpbin service that implements REST API at port 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin
+  namespace: inside-mesh
+  labels:
+    app: httpbin
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  template:
+    metadata:
+      labels:
+        app: httpbin
+    spec:
+      containers:
+      - name: httpbin
+        image: httpbin
+        imagePullPolicy: Never
+        ports:
+          - containerPort: 80
+
+
+# Expose the REST API as a service "httpbin"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  namespace: inside-mesh
+  labels:
+    app: httpbin
+spec:
+  ports:
+  - name: http
+    port: 80
+  selector:
+    app: httpbin
+
+
+# Expose the REST API as a service "httpbin-protected"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin-protected
+  namespace: inside-mesh
+  labels:
+    app: httpbin
+spec:
+  ports:
+  - name: http
+    port: 80
+  selector:
+    app: httpbin
+
+
+# Create policy that allows httpbin-protected to receive TLS traffic
+#
+# TODO:
+# maybe this is not very good demo setup but it somewhat works,
+# although it seems to require PERMISSIVE.
+# The problem probably is that single pod "httpbin" is accessed
+# with two service names and this policy affects only one of those.
+#
+# intended use of PERMISSIVE https://istio.io/docs/tasks/security/mtls-migration/
+#
+---
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "httpbin"
+  namespace: inside-mesh
+spec:
+  targets:
+  - name: httpbin-protected
+  peers:
+  - mtls:
+      mode: PERMISSIVE
+
+
+# Traffic within namespace allocated to service mesh will be
+# put into mutually authenticated TLS pipe managed by Istio.
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: default
+  namespace: inside-mesh
+spec:
+  host: "httpbin-protected.inside-mesh.svc.cluster.local"
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+
+
+# Deploy client pod
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client
+  namespace: inside-mesh
+  labels:
+    app: client
+spec:
+  selector:
+    matchLabels:
+      app: client
+  template:
+    metadata:
+      labels:
+        app: client
+    spec:
+      containers:
+      - name: client
+        image: client
+        imagePullPolicy: Never
+        command: ["/bin/sleep"] # run sleep so that the pod will remain running and we can "exec" into it to run http client
+        args: ["999999999"]

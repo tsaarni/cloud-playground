@@ -1,0 +1,120 @@
+# Create namespace `inside-mesh` and enable automatic istio sidecar
+# injection for pods deployed in this namespace
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    istio-injection: enabled
+  name: inside-mesh
+
+
+# Create mesh-wide policy to allow only mutual TLS connections
+# Note that MeshPolicy is not namespaced resource
+---
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "MeshPolicy"
+metadata:
+  name: "default"
+spec:
+  peers:
+  - mtls: {}
+
+
+# Traffic destined to *.local (any service within the cluster) will be
+# put into mutually authenticated TLS pipe managed by Istio.
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: default
+  namespace: inside-mesh
+spec:
+  host: "*.local"  # limit to any hosts running within cluster
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+
+
+# Deploy sshd service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sshd
+  namespace: inside-mesh
+  labels:
+    app: sshd
+spec:
+  selector:
+    matchLabels:
+      app: sshd
+  template:
+    metadata:
+      labels:
+        app: sshd
+    spec:
+      containers:
+      - name: sshd
+        image: sshd
+        imagePullPolicy: Never
+        ports:
+          - containerPort: 22
+
+
+# Expose the SSH as a service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sshd
+  namespace: inside-mesh
+  labels:
+    app: sshd
+spec:
+  ports:
+  - port: 22
+  selector:
+    app: sshd
+
+
+# Configure gateway, which routes traffic from edge of the mesh to the
+# service running within the mesh
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: mygateway
+  namespace: inside-mesh
+spec:
+  selector:
+    istio: ingressgateway # use istio default ingress gateway
+  servers:
+  - port:
+      number: 2222  # use 2222 since 22 is already taken by the host OS
+      protocol: TCP
+      name: tcp
+    hosts:
+    - "*"
+
+
+# Configure port based routing from gateway to the actual Service
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: sshd
+  namespace: inside-mesh
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - mygateway
+  tcp:
+  - match:
+    - port: 2222
+    route:
+    - destination:
+        host: "sshd"
+        port:
+          number: 22

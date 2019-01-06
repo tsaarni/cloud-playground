@@ -1,0 +1,141 @@
+# Create namespace `inside-mesh` and enable automatic istio sidecar
+# injection for pods deployed in this namespace
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    istio-injection: enabled
+  name: inside-mesh
+
+
+# Create mesh-wide policy to allow only mutual TLS connections
+# Note that MeshPolicy is not namespaced resource
+---
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "MeshPolicy"
+metadata:
+  name: "default"
+spec:
+  peers:
+  - mtls: {}
+
+
+# Traffic destined to *.local (any service within the cluster) will be
+# put into mutually authenticated TLS pipe managed by Istio.
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: default
+  namespace: inside-mesh
+spec:
+  host: "*.local" # any service running within cluster
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+
+
+# Deploy httpbin service that implements REST API at port 443
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin
+  namespace: inside-mesh
+  labels:
+    app: httpbin
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  template:
+    metadata:
+      labels:
+        app: httpbin
+    spec:
+      containers:
+      - name: httpbin
+        image: httpbin
+        imagePullPolicy: Never
+        ports:
+          - containerPort: 443
+        volumeMounts:
+        - mountPath: /run/secrets/certs/
+          name: httpbin-certs
+          readOnly: true
+        command: ["/bin/sh"]
+        # Configure Gunicorn HTTP server to terminate TLS
+        #   - server certificate and key
+        #   - require client certificate and validate against trusted CA cert
+        #     (--cert-reqs 2 == ssl.CERT_REQUIRED)
+        args: ["-c", "gunicorn -b 0.0.0.0:443 --access-logfile - --certfile /run/secrets/certs/httpbin.pem --keyfile /run/secrets/certs/httpbin-key.pem --cert-reqs 2 --ca-certs /run/secrets/certs/client-root.pem httpbin:app"]
+      volumes:
+      - name: httpbin-certs
+        secret:
+          optional: true
+          secretName: httpbin-certs
+
+
+# Expose the REST API as a service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  namespace: inside-mesh
+  labels:
+    app: httpbin
+spec:
+  ports:
+  - name: https
+    port: 443
+  selector:
+    app: httpbin
+
+
+# Configure gateway, which acts as a loadbalancer operating at the
+# edge of mesh
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: mygateway
+  namespace: inside-mesh
+spec:
+  selector:
+    istio: ingressgateway # use istio default ingress gateway
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: PASSTHROUGH
+    hosts:
+    - "*"
+
+
+# Configure TLS SNI based routing from gateway to the actual Service
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: httpbin
+  namespace: inside-mesh
+spec:
+  hosts:
+  - "httpbin.external.com"
+  gateways:
+  - mygateway
+  tls:
+  - match:
+    - port: 443
+      sniHosts:
+      - "httpbin.external.com"
+    route:
+    - destination:
+        host: httpbin # interpreted as httpbin.inside-mesh.svc.cluster.local
+        port:
+          number: 443
+

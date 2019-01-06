@@ -39,5 +39,5 @@ EOF
 # install tiller
 helm init --wait --service-account helm
 
-
-echo "source <(helm completion bash)" >> ~vagrant.bashrc
+# add bash completions for vagrant users
+echo "source <(helm completion bash)" >> ~vagrant/.bashrc

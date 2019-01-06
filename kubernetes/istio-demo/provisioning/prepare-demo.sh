@@ -27,6 +27,8 @@ cfssl gencert -ca certs/client-root.pem -ca-key certs/client-root-key.pem config
 
 # provision the externally issued ingress gateway certificate and key in a Secret for istio ingress gateway
 kubectl create -n istio-system secret tls istio-ingressgateway-certs --key certs/gateway-key.pem --cert certs/gateway.pem
+# client CA certificate for validating clients in mutual TLS setup
+kubectl create -n istio-system secret generic istio-ingressgateway-ca-certs --from-file=certs/client-root.pem
 
 # Note: istio-ingressgateway loads certificate automatically when the
 # secret is created. However, the pod needs to be restarted if gateway

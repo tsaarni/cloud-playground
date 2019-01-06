@@ -10,8 +10,8 @@ Vagrant.configure("2") do |config|
     v.cpus = 4       # 2 vCPUs is the minimum number of CPUs for master
   end
 
-  config.vm.provision "shell", path: "install-kubernetes.sh"
-  config.vm.provision "shell", path: "install-additions.sh"
-  config.vm.provision "shell", path: "install-istio.sh"
-  config.vm.provision "shell", path: "prepare-demo.sh"
+  config.vm.provision "shell", path: "provisioning/install-kubernetes.sh"
+  config.vm.provision "shell", path: "provisioning/install-additions.sh"
+  config.vm.provision "shell", path: "provisioning/install-istio.sh"
+  config.vm.provision "shell", path: "provisioning/prepare-demo.sh"
 end
