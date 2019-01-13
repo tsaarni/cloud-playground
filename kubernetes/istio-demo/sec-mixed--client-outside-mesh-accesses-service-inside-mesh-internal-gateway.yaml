@@ -1,0 +1,178 @@
+# Create namespace `inside-mesh` and enable automatic Istio sidecar
+# injection for pods deployed in this namespace
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    istio-injection: enabled
+  name: inside-mesh
+
+
+# Create namespace `outside-mesh` for services outside the mesh
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: outside-mesh
+
+
+# Create mesh-wide policy to allow only mutual TLS connections
+# Note that MeshPolicy is not namespaced resource
+---
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "MeshPolicy"
+metadata:
+  name: "default"
+spec:
+  peers:
+  - mtls: {}
+
+
+# Traffic within namespace allocated to service mesh will be
+# put into mutually authenticated TLS pipe managed by Istio.
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: default
+  namespace: inside-mesh
+spec:
+  host: "*.local"
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+
+
+# Deploy httpbin service that implements REST API at port 80 (HTTP)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin
+  namespace: inside-mesh
+  labels:
+    app: httpbin
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  template:
+    metadata:
+      labels:
+        app: httpbin
+    spec:
+      containers:
+      - name: httpbin
+        image: httpbin
+        imagePullPolicy: Never
+        ports:
+          - containerPort: 80
+        command: ["/bin/sh"]
+        args: ["-c", "gunicorn -b 0.0.0.0:80 httpbin:app"]
+
+
+# Expose the REST APIs as a services
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  namespace: inside-mesh
+  labels:
+    app: httpbin
+spec:
+  ports:
+  - name: http
+    port: 80
+  selector:
+    app: httpbin
+
+
+# Configure gateway, which acts as a loadbalancer operating at the
+# edge of mesh
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: mygateway
+  namespace: inside-mesh
+spec:
+  selector:
+    istio: internal-ingressgateway # use the ingress gateway which we have deployed only for cluster internal traffic
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE  # terminate TLS in gateway but use only server authentication
+
+      # istio-internal-ingressgateway pod mounts a certificate and key from Secret
+      # that was pre-provisioned in provisioning/prepare-demo.sh
+      serverCertificate: /etc/istio/ingressgateway-certs/tls.crt
+      privateKey: /etc/istio/ingressgateway-certs/tls.key
+
+    hosts:
+    - "*"  # accept any incoming request, we do not require TLS SNI to be set
+
+
+# Configure L7 HTTP URL based routing from gateway to the actual
+# Service
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: httpbin
+  namespace: inside-mesh
+spec:
+  hosts:
+  - "*"
+
+  gateways:
+  - mygateway
+  http:
+  - route:
+    - destination:
+        host: httpbin  # interpreted as httpbin.inside-mesh.svc.cluster.local
+#  - match:
+#    - uri:
+#        prefix: "/status/"
+#    route:
+#    - destination:
+#        host: httpbin  # interpreted as httpbin.inside-mesh.svc.cluster.local
+
+
+
+# Deploy client pod outside-mesh
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client
+  namespace: outside-mesh
+  labels:
+    app: client
+spec:
+  selector:
+    matchLabels:
+      app: client
+  template:
+    metadata:
+      labels:
+        app: client
+    spec:
+      containers:
+      - name: client
+        image: client
+        imagePullPolicy: Never
+        volumeMounts:
+        - mountPath: /run/secrets/certs/
+          name: client-certs
+          readOnly: true
+        command: ["/bin/sleep"] # run sleep so that the pod will remain running and we can "exec" into it to run http client
+        args: ["999999999"]
+      volumes:
+      - name: client-certs
+        secret:
+          secretName: client-certs

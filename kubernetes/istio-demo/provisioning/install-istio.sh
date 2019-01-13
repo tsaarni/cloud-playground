@@ -6,9 +6,9 @@ export KUBECONFIG=/etc/kubernetes/admin.conf
 ISTIO_RELEASE=https://github.com/istio/istio/releases/download/1.0.5/istio-1.0.5-linux.tar.gz
 
 curl -L -s $ISTIO_RELEASE -o istio.tar.gz
-tar zxf istio.tar.gz -C /tmp
+tar zxf istio.tar.gz -C ~vagrant
 rm istio.tar.gz
-cd /tmp/istio*
+cd ~vagrant/istio*
 
 cp -a bin/istioctl /usr/local/bin/
 

@@ -1,4 +1,5 @@
 gateways:
+  # customize istio-ingressgateway
   istio-ingressgateway:
     type: NodePort
     ports:
@@ -13,26 +14,53 @@ gateways:
       name: tcp
       nodePort: 31400
     - port: 15011
-      targetPort: 15011
       name: tcp-pilot-grpc-tls
     - port: 8060
-      targetPort: 8060
       name: tcp-citadel-grpc-tls
     - port: 853
-      targetPort: 853
       name: tcp-dns-tls
     - port: 15030
-      targetPort: 15030
       name: http2-prometheus
     - port: 15031
-      targetPort: 15031
       name: http2-grafana
     - port: 2222
-      targetPort: 2222
       name: ssh
+
+  # create new gateway, which is not exposed externally
+  # but which will be responsible for handling cluster internal inbound traffic
+  istio-internal-ingressgateway:
+    enabled: true
+    type: ClusterIP
+    labels:
+      app: istio-internall-ingressgateway
+      istio: internal-ingressgateway
+    replicaCount: 1
+    autoscaleMin: 1
+    autoscaleMax: 5
+    resources: {}
+    cpu:
+      targetAverageUtilization: 80
+    loadBalancerIP: ""
+    serviceAnnotations: {}
+    type: ClusterIP
+    ports:
+    - port: 80
+      name: http2
+    - port: 443
+      name: https
+    secretVolumes:
+    - name: ingressgateway-certs
+      secretName: istio-internal-ingressgateway-certs
+      mountPath: /etc/istio/ingressgateway-certs
+    - name: ingressgateway-ca-certs
+      secretName: istio-internal-ingressgateway-ca-certs
+      mountPath: /etc/istio/ingressgateway-ca-certs
 
 # Istio mutual TLS is disabled for dataplane by default,
 # we keep that default in order to demonstrate meshpolicies.
 #global:
 #  mtls:
 #    enabled: true
+
+global:
+  controlPlaneSecurityEnabled: true

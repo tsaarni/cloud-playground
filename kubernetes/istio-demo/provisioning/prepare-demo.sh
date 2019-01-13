@@ -23,12 +23,19 @@ cfssl genkey -initca configs/cfssl-csr-root-ca-server.json | cfssljson -bare cer
 cfssl genkey -initca configs/cfssl-csr-root-ca-client.json | cfssljson -bare certs/client-root
 cfssl gencert -ca certs/server-root.pem -ca-key certs/server-root-key.pem configs/cfssl-csr-endentity-httpbin.json | cfssljson -bare certs/httpbin
 cfssl gencert -ca certs/server-root.pem -ca-key certs/server-root-key.pem configs/cfssl-csr-endentity-gateway.json | cfssljson -bare certs/gateway
+cfssl gencert -ca certs/server-root.pem -ca-key certs/server-root-key.pem configs/cfssl-csr-endentity-internal-gateway.json | cfssljson -bare certs/internal-gateway
 cfssl gencert -ca certs/client-root.pem -ca-key certs/client-root-key.pem configs/cfssl-csr-endentity-client.json  | cfssljson -bare certs/client
 
-# provision the externally issued ingress gateway certificate and key in a Secret for istio ingress gateway
+# provision the externally issued ingress server certificate and key in a Secret for istio ingress gateway
 kubectl create -n istio-system secret tls istio-ingressgateway-certs --key certs/gateway-key.pem --cert certs/gateway.pem
 # client CA certificate for validating clients in mutual TLS setup
 kubectl create -n istio-system secret generic istio-ingressgateway-ca-certs --from-file=certs/client-root.pem
+
+# provision the ingress server certificate and key for internal ingress gateway, which is used to forward traffic from outside-mesh to inside-mes
+kubectl create -n istio-system secret tls istio-internal-ingressgateway-certs --key certs/internal-gateway-key.pem --cert certs/internal-gateway.pem
+# client CA certificate for validating clients in mutual TLS setup
+kubectl create -n istio-system secret generic istio-internal-ingressgateway-ca-certs --from-file=certs/client-root.pem
+
 
 # Note: istio-ingressgateway loads certificate automatically when the
 # secret is created. However, the pod needs to be restarted if gateway

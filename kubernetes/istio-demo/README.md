@@ -75,8 +75,10 @@ Security related demos
 * sec-mixed--client-outside-mesh-accesses-service-inside-mesh-no-tls [sh](sec-mixed--client-outside-mesh-accesses-service-inside-mesh-no-tls.sh), [yaml](sec-mixed--client-outside-mesh-accesses-service-inside-mesh-no-tls.yaml)
 * sec-mixed--client-outside-mesh-accesses-service-inside-mesh-passthrough-tls [sh](sec-mixed--client-outside-mesh-accesses-service-inside-mesh-passthrough-tls.sh), [yaml](sec-mixed--client-outside-mesh-accesses-service-inside-mesh-passthrough-tls.yaml)
 * sec-mixed--client-outside-mesh-accesses-service-inside-mesh-using-spiffe-cert [sh](sec-mixed--client-outside-mesh-accesses-service-inside-mesh-using-spiffe-cert.sh), [yaml](sec-mixed--client-outside-mesh-accesses-service-inside-mesh-using-spiffe-cert.yaml)
+* sec-mixed--client-outside-mesh-accesses-service-inside-mesh-internal-gateway [sh](sec-mixed--client-outside-mesh-accesses-service-inside-mesh-internal-gateway.sh), [yaml](sec-mixed--client-outside-mesh-accesses-service-inside-mesh-internal-gateway.yaml)
 * sec-explore--istio-proxy-internals [sh](sec-explore--istio-proxy-internals.sh), [yaml](sec-explore--istio-proxy-internals.yaml)
 * sec-explore--istio-proxy-no-tls-by-default [sh](sec-explore--istio-proxy-no-tls-by-default.sh), [yaml](sec-explore--istio-proxy-no-tls-by-default.yaml)
+* sec-explore--istio-controlplane-internals [sh](sec-explore--istio-controlplane-internals.sh), [yaml](sec-explore--istio-controlplane-internals.yaml)
 * sec-auth--rbac-on-namespace-level [sh](sec-auth--rbac-on-namespace-level.sh), [yaml](sec-auth--rbac-on-namespace-level.yaml)
 * sec-auth--rbac-on-service-level [sh](sec-auth--rbac-on-service-level.sh), [yaml](sec-auth--rbac-on-service-level.yaml)
 
@@ -119,7 +121,6 @@ Mixer adapters
 * https://github.com/apigee/istio-mixer-adapter
 
 Miscellaneous
-* configure several ingress gateways https://stackoverflow.com/questions/51835752/how-to-create-custom-istio-ingress-gateway-controller?rq=1
 * show envoy configuration https://istio.io/help/ops/traffic-management/proxy-cmd/
 
 ## Findings
@@ -127,7 +128,7 @@ Miscellaneous
 TLS
 * default validity period of workload certificates is 3 month, root CA certificate 1 year
   * controlled by citadel command line parameters (see [cmd line reference](https://istio.io/docs/reference/commands/istio_ca/) and [faq](https://istio.io/help/faq/security/#cert-lifetime-config))
-* RSA 2048
+* RSA 2048 by default, configurable by command line option --key-size
 * root key in Secret `istio-ca-secret` in namespace `istio-system`
 * provisioning client identities for validating client certs (ingress) or for outbound mutual TLS connections (egress) is not very convenient
   * ingress: whitelisting SANs ([Server.TLSOptions](https://istio.io/docs/reference/config/istio.networking.v1alpha3/#Server-TLSOptions) in Gateway resource)
@@ -142,6 +143,11 @@ To capture traffic from a proxy use the following command. After capturing, open
 
     sudo tcpdump -s 0 -i any -w capture.pcap port 80 and host $(kubectl -n <NAMESPACE> get pod -l <LABEL> -o jsonpath={.items..podIP})
 
+
+To re-deploy Istio after changing values
+
+    cd ~/istio*
+    helm upgrade -f /vagrant/configs/helm-istio-values.yaml istio install/kubernetes/helm/istio
 
 
 ## References

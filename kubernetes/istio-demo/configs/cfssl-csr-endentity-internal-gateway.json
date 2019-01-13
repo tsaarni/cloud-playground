@@ -1,0 +1,6 @@
+{
+  "CN": "internal-gateway",
+  "Hosts": [
+      "istio-internal-ingressgateway.istio-system.svc.cluster.local", "istio-internal-ingressgateway.istio-system"
+  ]
+}
