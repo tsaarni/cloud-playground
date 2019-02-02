@@ -36,6 +36,8 @@ kubectl create -n istio-system secret tls istio-internal-ingressgateway-certs --
 # client CA certificate for validating clients in mutual TLS setup
 kubectl create -n istio-system secret generic istio-internal-ingressgateway-ca-certs --from-file=certs/client-root.pem
 
+kubectl -n istio-system create secret generic istio-egressgateway-ca-certs --from-file=certs/server-root.pem
+kubectl -n istio-system create secret tls istio-egressgateway-certs --cert certs/client.pem --key certs/client-key.pem
 
 # Note: istio-ingressgateway loads certificate automatically when the
 # secret is created. However, the pod needs to be restarted if gateway

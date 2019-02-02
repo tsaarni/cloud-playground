@@ -81,6 +81,9 @@ Security related demos
 * sec-explore--istio-controlplane-internals [sh](sec-explore--istio-controlplane-internals.sh), [yaml](sec-explore--istio-controlplane-internals.yaml)
 * sec-auth--rbac-on-namespace-level [sh](sec-auth--rbac-on-namespace-level.sh), [yaml](sec-auth--rbac-on-namespace-level.yaml)
 * sec-auth--rbac-on-service-level [sh](sec-auth--rbac-on-service-level.sh), [yaml](sec-auth--rbac-on-service-level.yaml)
+* sec-egress--tls-originatation-directly-within-mesh [sh](sec-egress--tls-originatation-directly-within-mesh.sh), [yaml](sec-egress--tls-originatation-directly-within-mesh.yaml)
+* sec-egress--tls-originatation-from-egress-gateway [sh](sec-egress--tls-originatation-from-egress-gateway.sh), [yaml](sec-egress--tls-originatation-from-egress-gateway.yaml)
+* sec-egress--mtls-originatation-from-egress-gateway [sh](sec-egress--mtls-originatation-from-egress-gateway.sh), [yaml](sec-egress--mtls-originatation-from-egress-gateway.yaml)
 
 
 ## To be studied and tested

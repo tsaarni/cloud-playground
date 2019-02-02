@@ -1,0 +1,173 @@
+# Create namespace `inside-mesh` and enable automatic Istio sidecar
+# injection for pods deployed in this namespace
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    istio-injection: enabled
+  name: inside-mesh
+
+
+# Create mesh-wide policy to allow only mutual TLS connections
+# Note that MeshPolicy is not namespaced resource
+---
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "MeshPolicy"
+metadata:
+  name: "default"
+spec:
+  peers:
+  - mtls: {}
+
+
+# create ServiceEntry for external service
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: httpbin-external
+  namespace: inside-mesh
+spec:
+  hosts:
+  - httpbin.org
+  ports:
+  - number: 443
+    name: https-port
+    protocol: HTTPS
+  resolution: DNS
+
+
+# create gateway that will accept incoming traffic from within the service mesh
+# note that gateway is configured for mutual authentication with spiffe certs
+# i.e. it acts as a TLS server towards service mesh
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: mygateway
+  namespace: inside-mesh
+spec:
+  selector:
+    istio: egressgateway
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    hosts:
+    - httpbin.org
+    tls:
+      mode: MUTUAL
+      serverCertificate: /etc/certs/cert-chain.pem
+      privateKey: /etc/certs/key.pem
+      caCertificates: /etc/certs/root-cert.pem
+
+
+# create DestinationRule that will enforce TLS towards egress gateway
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: httpbin-egressgateway
+  namespace: inside-mesh
+spec:
+  host: istio-egressgateway.istio-system.svc.cluster.local
+  subsets:
+  - name: httpbin
+    trafficPolicy:
+      loadBalancer:
+        simple: ROUND_ROBIN
+      portLevelSettings:
+      - port:
+          number: 443
+        tls:
+          mode: ISTIO_MUTUAL
+          sni: httpbin.org
+
+
+# create VirtualService that will rewrite the request
+# by forwarding inbound port 80 HTTP to port 443
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: httpbin-external
+  namespace: inside-mesh
+spec:
+  hosts:
+  - httpbin.org # host the traffic is sent towards
+
+  # names of the envoys that should apply this rule, "mesh" is the default that applies to all internal envoy sidecards
+  gateways:
+  - mygateway
+  - mesh
+  http:
+  - match:
+    - gateways:
+      - mesh
+      port: 80
+    route:
+    - destination:
+        host: istio-egressgateway.istio-system.svc.cluster.local
+        subset: httpbin
+        port:
+          number: 443
+      weight: 100
+  - match:
+    - gateways:
+      - mygateway
+      port: 443
+    route:
+    - destination:
+        host: httpbin.org
+        port:
+          number: 443
+      weight: 100
+
+
+
+# create DestinationRule that will enforce TLS towards the external service
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: httpbin-external
+  namespace: inside-mesh
+spec:
+  host: httpbin.org
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+    portLevelSettings:
+    - port:
+        number: 443
+      tls:
+        mode: SIMPLE # initiates HTTPS when accessing httpbin.org
+        sni: httpbin.org  # SNI needs to be set in outbound TLS connection if target service requires it - httpbin.org does
+
+
+# Deploy client to inside-mesh namespace
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client
+  namespace: inside-mesh
+  labels:
+    app: client
+spec:
+  selector:
+    matchLabels:
+      app: client
+  template:
+    metadata:
+      labels:
+        app: client
+    spec:
+      containers:
+      - name: client
+        image: client
+        imagePullPolicy: Never
+        command: ["/bin/sleep"] # run sleep so that the pod will remain running and we can "exec" into it to run http client
+        args: ["999999999"]
