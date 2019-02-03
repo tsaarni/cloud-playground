@@ -1,0 +1,20 @@
+# see "kubeadm config print-default" for reference
+
+apiVersion: kubeadm.k8s.io/v1alpha3
+kind: ClusterConfiguration
+
+apiServerExtraArgs:
+  # change port range so that we can bind privileged ports with NodePort
+  # this is needed so that we can use default http and https ports when connecting services
+  # with clients such as httpie without having to override HTTP header
+  # "Host: host1.external.com:31390" with "Host: host1.external.com"
+  service-node-port-range: 80-32767
+
+networking:
+  # needed for calico
+  podSubnet: 192.168.0.0/16
+
+# needed since we want to use kubectl with virtualbox NAT port forward,
+# in which case kubectl accesses localhost
+apiServerCertSANs:
+  - 127.0.0.1

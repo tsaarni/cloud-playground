@@ -1,0 +1,40 @@
+# Deploy httpbin
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin
+  labels:
+    app: httpbin
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  template:
+    metadata:
+      labels:
+        app: httpbin
+    spec:
+      containers:
+      - name: httpbin
+        image: httpbin
+        imagePullPolicy: Never
+        ports:
+          - containerPort: 80
+
+
+# Expose httpbin with external loadbalancer IP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  annotations:
+    metallb.universe.tf/address-pool: oam
+spec:
+  ports:
+  - name: http
+    port: 80
+  selector:
+    app: httpbin
+  type: LoadBalancer

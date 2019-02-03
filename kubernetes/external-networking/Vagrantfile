@@ -1,0 +1,42 @@
+# -*- mode: ruby -*-
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/xenial64"
+
+  # VMs for running tests
+  config.vm.define "oam" do |v|
+    v.vm.hostname = "oam"
+    v.vm.network "private_network", ip: "10.10.11.10", virtualbox__intnet: "oam"
+    v.vm.provider "virtualbox" do |vbox|
+      vbox.memory = 2048
+    end
+  end
+
+  config.vm.define "traffic" do |v|
+    v.vm.hostname = "traffic"
+    v.vm.network "private_network", ip: "10.10.12.10", virtualbox__intnet: "traffic"
+    v.vm.provider "virtualbox" do |vbox|
+      vbox.memory = 2048
+    end
+  end
+
+  # VM for kubernetes
+  config.vm.define "kubernetes" do |v|
+    v.vm.hostname = "kubernetes"
+    v.vm.network "private_network", ip: "10.10.11.15", virtualbox__intnet: "oam"
+    v.vm.network "private_network", ip: "10.10.12.15", virtualbox__intnet: "traffic"
+
+    v.vm.provider "virtualbox" do |vbox|
+      vbox.memory = 4096  # 2GB is the minimum amount of memory for master
+      vbox.cpus = 2       # 2 vCPUs is the minimum number of CPUs for master
+    end
+
+    v.vm.provision "shell", path: "provisioning/install-kubernetes-and-docker.sh"
+    v.vm.provision "shell", path: "provisioning/install-additions.sh"
+    v.vm.provision "shell", path: "provisioning/install-metallb.sh"
+    v.vm.provision "shell", path: "provisioning/prepare-demo.sh"
+  end
+
+  config.vm.provision "shell", path: "provisioning/install-test-tools.sh"
+
+end

@@ -1,0 +1,221 @@
+#
+# Install traefik ingress controller and httpbin service
+#
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo
+
+
+
+########################################################################
+#
+# Traefik install instructions are from
+#  - https://docs.traefik.io/user-guide/kubernetes/
+#
+
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: traefik-ingress-controller
+  namespace: demo
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - services
+      - endpoints
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - extensions
+    resources:
+      - ingresses
+    verbs:
+      - get
+      - list
+      - watch
+
+
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: traefik-ingress-controller
+  namespace: demo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: traefik-ingress-controller
+subjects:
+- kind: ServiceAccount
+  name: traefik-ingress-controller
+  namespace: demo
+
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: traefik-ingress-controller
+  namespace: demo
+
+
+---
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: traefik-ingress-controller
+  namespace: demo
+  labels:
+    k8s-app: traefik-ingress-lb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: traefik-ingress-lb
+  template:
+    metadata:
+      labels:
+        k8s-app: traefik-ingress-lb
+        name: traefik-ingress-lb
+    spec:
+      serviceAccountName: traefik-ingress-controller
+      terminationGracePeriodSeconds: 60
+      containers:
+      - image: traefik:alpine
+        name: traefik-ingress-lb
+        ports:
+        - name: http
+          containerPort: 80
+        - name: https
+          containerPort: 443
+        - name: admin
+          containerPort: 8080
+        args:
+        - --api
+        - --kubernetes
+        - --logLevel=INFO
+        - --defaultentrypoints=http,https
+        - --entrypoints=Name:https Address::443 TLS
+        - --entrypoints=Name:http Address::80
+
+
+# expose ingress controller externally by
+# virtual IP from "traffic" address poll
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: traefik-ingress-service
+  namespace: demo
+  annotations:
+    metallb.universe.tf/address-pool: traffic
+spec:
+  selector:
+    k8s-app: traefik-ingress-lb
+  ports:
+    - name: https
+      port: 443
+  type: LoadBalancer
+
+
+# expose admin interface of integress controller
+# by virtual IP from "oam" address pool
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: traefik-ingress-service-admin
+  namespace: demo
+  annotations:
+    metallb.universe.tf/address-pool: oam
+spec:
+  selector:
+    k8s-app: traefik-ingress-lb
+  ports:
+    - protocol: TCP
+      port: 8080
+      name: admin
+  type: LoadBalancer
+
+
+
+
+########################################################################
+#
+# Deploy httpbin service and expose it in "traffic" network with ingress
+# controller
+#
+
+# Deploy httpbin
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin
+  namespace: demo
+  labels:
+    app: httpbin
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  template:
+    metadata:
+      labels:
+        app: httpbin
+    spec:
+      containers:
+      - name: httpbin
+        image: httpbin
+        imagePullPolicy: Never
+        ports:
+          - containerPort: 80
+
+
+# Expose httpbin internally as ClusterIP service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  namespace: demo
+spec:
+  ports:
+  - name: http
+    port: 80
+  selector:
+    app: httpbin
+
+
+# Expose httpbin from traefik ingress which is in "traffic" network
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: httpbin
+  namespace: demo
+
+  # https://docs.traefik.io/configuration/backends/kubernetes/#annotations
+  annotations:
+    traefik.ingress.kubernetes.io/rule-type: PathPrefixStrip
+spec:
+  rules:
+  - host: 10.10.12.100.xip.io
+    http:
+      paths:
+      - path: /httpbin
+        backend:
+          serviceName: httpbin
+          servicePort: 80
+  tls:
+  - hosts:
+    - "10.10.12.100.xip.io"
+    secretName: traefik-ingress-tls-cert
