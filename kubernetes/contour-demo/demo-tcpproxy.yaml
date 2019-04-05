@@ -1,0 +1,61 @@
+# create TCP echo service that will listen to incoming TCP connections
+# and echo everything it receives back to the client
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo
+  labels:
+    app: echo
+spec:
+  selector:
+    matchLabels:
+      app: echo
+  template:
+    metadata:
+      labels:
+        app: echo
+    spec:
+      containers:
+      - name: alpine
+        image: alpine:3.9
+        command:
+          - "/bin/sh"
+        args:
+          - "-c"
+          # We implement TCP echo server by having netcat listen to TCP echo port
+          # and forward incoming data to tee, which echoes it back to the client
+          # and also to stderr which can be observed with kubectl logs
+          - "while true; do nc -l -p 7 -v -e tee /dev/stderr; done"
+
+
+# expose the TCP echo service internally within Kubernetes cluster
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo
+spec:
+  selector:
+    app: echo
+  ports:
+    - port: 7
+
+
+# expose the TCP echo service externally using TLS.
+# Contour will terminate the external TLS and forward the
+# cleartext TCP connection to the TCP echo service
+---
+apiVersion: contour.heptio.com/v1beta1
+kind: IngressRoute
+metadata:
+  name: tcpecho
+spec:
+  virtualhost:
+    fqdn: tcpecho.local
+    tls:
+      secretName: tcpecho-tls
+  tcpproxy:
+    services:
+    - name: echo
+      port: 7
