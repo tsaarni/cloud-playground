@@ -1,0 +1,39 @@
+
+# https://www.keycloak.org/docs/latest/securing_apps/index.html#_keycloak_generic_adapter
+# https://github.com/keycloak/keycloak-gatekeeper
+# https://github.com/jboss-dockerfiles/keycloak/tree/master/gatekeeper
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak-gatekeeper
+spec:
+  selector:
+    matchLabels:
+      app: keycloak-gatekeeper-app
+  template:
+    metadata:
+      labels:
+        app: keycloak-gatekeeper-app
+    spec:
+      containers:
+      - name: keycloak-gatekeeper-app
+        image: quay.io/keycloak/keycloak-gatekeeper:6.0.1
+        args:
+          - --config /etc/keycloak-gatekeeper/keycloak-gatekeeper.yaml
+        volumeMounts:
+         - name: config-volume
+           mountPath: /etc/keycloak-gatekeeper
+      volumes:
+        - name: keycloak-gatekeeper-config
+          configMap:
+            name: keycloak-gatekeeper-config
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-gatekeeper-config
+data:
+  keycloak-gatekeeper.yaml: >-
+    discovery-url: http://keycloak/auth/realms/master
