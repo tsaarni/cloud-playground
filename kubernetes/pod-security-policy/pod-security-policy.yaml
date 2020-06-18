@@ -1,0 +1,170 @@
+#
+# https://pmcgrath.net/using-pod-security-policies-with-kubeadm
+# http://blog.tundeoladipupo.com/2019/06/01/Kubernetes,-PodSecurityPolicy-and-Kubeadm/
+#
+# - https://kubernetes.io/docs/concepts/policy/pod-security-policy/ (kubernetes v1.18 beta)
+#   - runtime/default seccomp profile
+#     https://github.com/containerd/containerd/blob/834665d9db028c8733479b5063e4fd477e549364/contrib/seccomp/seccomp_default.go
+# - https://kubernetes.io/docs/tutorials/clusters/apparmor/
+#   - runtime/default apparmor profile template
+#     https://github.com/containerd/containerd/blob/1ac546b3c4a3331a9997427052d1cb9888a2f3ef/contrib/apparmor/template.go
+# - selinux
+#   - https://github.com/containers/container-selinux
+#   - man container_selinux https://github.com/containers/container-selinux/blob/master/container_selinux.8
+#
+
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  annotations:
+#    apparmor.security.beta.kubernetes.io/allowedProfileNames: 'runtime/default'
+#    apparmor.security.beta.kubernetes.io/defaultProfileName:  'runtime/default'
+    seccomp.security.alpha.kubernetes.io/allowedProfileNames: 'runtime/default'
+    seccomp.security.alpha.kubernetes.io/defaultProfileName:  'runtime/default'
+  name: default
+spec:
+  # default set of capabilities are implicitly allowed
+  allowedCapabilities: []
+  # allow setuid binaries to change effective uid, allow setcap to change capabilities (e.g. ping)
+  allowPrivilegeEscalation: false
+  # supplemental groups
+  fsGroup:
+    rule: 'MustRunAs'
+    ranges:
+      # Forbid adding the root group.
+      - min: 1
+        max: 65535
+  # can share host IPC namespace
+  hostIPC: false
+  # can share host network namespace
+  hostNetwork: false
+  # can share host PID namespace
+  hostPID: false
+  # give all capabilities
+  privileged: false
+  readOnlyRootFilesystem: false
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  seLinux:
+    rule: 'MustRunAs'
+  supplementalGroups:
+    rule: 'RunAsNonRoot'
+    ranges:
+      # Forbid adding the root group.
+      - min: 1
+        max: 65535
+  volumes:
+  - 'configMap'
+  - 'downwardAPI'
+  - 'emptyDir'
+  - 'persistentVolumeClaim'
+  - 'projected'
+  - 'secret'
+  hostNetwork: false
+  runAsUser:
+    rule: 'RunAsAny'
+  seLinux:
+    rule: 'RunAsAny'
+  supplementalGroups:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'RunAsAny'
+---
+# Cluster role which grants access to the default pod security policy
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: default-psp
+rules:
+- apiGroups:
+  - policy
+  resourceNames:
+  - default
+  resources:
+  - podsecuritypolicies
+  verbs:
+  - use
+---
+# Cluster role binding for default pod security policy granting all authenticated users access
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: default-psp
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: default-psp
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: Group
+  name: system:authenticated
+---
+# Should grant access to very few pods, i.e. kube-system system pods and possibly CNI pods
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  annotations:
+    # See https://kubernetes.io/docs/concepts/policy/pod-security-policy/#seccomp
+    seccomp.security.alpha.kubernetes.io/allowedProfileNames: '*'
+  name: privileged
+spec:
+  allowedCapabilities:
+  - '*'
+  allowPrivilegeEscalation: true
+  fsGroup:
+    rule: 'RunAsAny'
+  hostIPC: true
+  hostNetwork: true
+  hostPID: true
+  hostPorts:
+  - min: 0
+    max: 65535
+  privileged: true
+  readOnlyRootFilesystem: false
+  runAsUser:
+    rule: 'RunAsAny'
+  seLinux:
+    rule: 'RunAsAny'
+  supplementalGroups:
+    rule: 'RunAsAny'
+  volumes:
+  - '*'
+---
+# Cluster role which grants access to the privileged pod security policy
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: privileged-psp
+rules:
+- apiGroups:
+  - policy
+  resourceNames:
+  - privileged
+  resources:
+  - podsecuritypolicies
+  verbs:
+  - use
+---
+# Role binding for kube-system - allow nodes and kube-system service accounts - should take care of CNI i.e. flannel running in the kube-system namespace
+# Assumes access to the kube-system is restricted
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kube-system-psp
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: privileged-psp
+subjects:
+# For the kubeadm kube-system nodes
+- apiGroup: rbac.authorization.k8s.io
+  kind: Group
+  name: system:nodes
+# For all service accounts in the kube-system namespace
+- apiGroup: rbac.authorization.k8s.io
+  kind: Group
+  name: system:serviceaccounts:kube-system
+- kind: ServiceAccount
+  name: replicaset-controller
+  namespace: kube-system

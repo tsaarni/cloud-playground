@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: privileged
+  labels:
+    app: privileged
+spec:
+  selector:
+    matchLabels:
+      app: privileged
+  template:
+    metadata:
+      labels:
+        app: privileged
+    spec:
+      containers:
+      - name:  privileged
+        image: alpine:3
+        command: ["sleep", "99999999"]
+        volumeMounts:
+        - mountPath: /host
+          name: host-volume
+      volumes:
+      - name: host-volume
+        hostPath:
+          path: /
