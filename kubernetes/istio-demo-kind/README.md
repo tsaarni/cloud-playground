@@ -1,0 +1,67 @@
+
+
+kind create cluster --config configs/kind-cluster-config.yaml --name istio
+
+
+# Download istio release from https://github.com/istio/istio/releases
+wget https://github.com/istio/istio/releases/download/1.6.12/istio-1.6.12-linux-amd64.tar.gz
+tar zxvf istio-1.6.12-linux-amd64.tar.gz
+export PATH=$PATH:$PWD/istio-1.6.12/bin
+
+
+# list all profiles
+istioctl profile list
+
+
+istioctl install --set profile=minimal
+istioctl profile dump minimal
+
+
+istioctl profile dump   # current???
+kubectl -n istio-system get istiooperator installed-state -o yaml
+
+
+istioctl profile dump demo
+
+
+kubectl label namespace default istio-injection=enabled
+kubectl apply -f manifests/echoserver-without-tls.yaml
+
+
+http http://host1.127-0-0-111.nip.io/
+
+
+kubectl create ns outside-mesh
+kubectl -n outside-mesh apply -f manifests/shell.yaml
+kubectl -n outside-mesh exec -it shell-7567c49b6b-g9n5m -- ash
+
+
+http http://echoserver.default
+openssl s_client -connect echoserver.default:80|openssl x509 -text -noout
+
+
+
+mkdir certs
+rm certs/*
+kubectl -n istio-system get secret istio-ca-secret -o jsonpath='{..ca-cert\.pem}' | base64 -d > certs/ca-cert.pem
+kubectl -n istio-system get secret istio-ca-secret -o jsonpath='{..ca-key\.pem}' | base64 -d > certs/ca-cert-key.pem
+
+certyaml --destination certs/ configs/certs.yaml
+
+
+kubectl -n outside-mesh create secret tls client-cert --cert=certs/client.pem --key=certs/client-key.pem --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n outside-mesh create secret generic ca-cert --from-file=cacert.pem=certs/ca-cert.pem --dry-run=client -o yaml | kubectl apply -f -
+
+
+http --cert /run/secrets/certs/tls.crt --cert-key /run/secrets/certs/tls.key --verify /run/secrets/ca/cacert.pem https://echoserver.default:80
+
+http: error: SSLError: HTTPSConnectionPool(host='echoserver.default', port=80): Max retries exceeded with url: / (Caused by SSLError(SSLCertVerificationError('no appropriate commonName or subjectAltName fields were found'))) while doing a GET request to URL: https://echoserver.default:80/
+
+echo -e "GET / HTTP/1.0\r\n" | openssl s_client -cert /run/secrets/certs/tls.crt -key /run/secrets/certs/tls.key -CAfile /run/secrets/ca/cacert.pem -connect echoserver.default:80
+
+
+
+
+
+printf "GET / HTTP/1.1\nHost: echoserver\n\nQ\n" | openssl s_client -cert /run/secrets/certs/tls.crt -key /run/secrets/certs/tls.key -CAfile /run/secrets/ca
+/cacert.pem -connect echoserver.default:80 -quiet

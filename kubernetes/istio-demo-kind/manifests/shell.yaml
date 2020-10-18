@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shell
+  labels:
+    app: shell
+spec:
+  selector:
+    matchLabels:
+      app: shell
+  template:
+    metadata:
+      labels:
+        app: shell
+    spec:
+      containers:
+        - name: shell
+          image: alpine:latest
+          command: ["/bin/sh"]
+          args:
+            - "-c"
+            - "apk add --update-cache httpie openssl && sleep 99999999"
+          volumeMounts:
+            - mountPath: /run/secrets/certs/
+              name: client-cert
+              readOnly: true
+            - mountPath: /run/secrets/ca/
+              name: ca-cert
+              readOnly: true
+      volumes:
+        - name: client-cert
+          secret:
+            secretName: client-cert
+            optional: true
+        - name: ca-cert
+          secret:
+            secretName: ca-cert
+            optional: true

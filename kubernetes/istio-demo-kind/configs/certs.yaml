@@ -1,0 +1,7 @@
+subject: cn=ca-cert
+---
+subject: cn=client
+issuer: cn=ca-cert
+sans:
+- DNS:foo.bar.baz
+- URI:spiffe://cluster.local/ns/foo/sa/bar
