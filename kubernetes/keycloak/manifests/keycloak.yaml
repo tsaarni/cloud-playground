@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  labels:
+    app: keycloak
+spec:
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:12.0.2
+          ports:
+            - name: http
+              containerPort: 8080
+
+          env:
+            - name: KEYCLOAK_USER
+              value: admin
+            - name: KEYCLOAK_PASSWORD
+              value: admin
+            - name: DB_VENDOR
+              value: postgres
+            - name: DB_ADDR
+              value: postgres
+            - name: DB_USER
+              value: keycloak
+            - name: DB_PASSWORD
+              value: keycloak
+
+          volumeMounts:
+            - name: scripts
+              mountPath: /opt/jboss/startup-scripts/
+            - name: certs
+              mountPath: /certs
+
+      volumes:
+        - name: scripts
+          configMap:
+            name: keycloak-cli-scripts
+        - name: certs
+          secret:
+            secretName: keycloakcert
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+spec:
+  selector:
+    app: keycloak
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-cli-scripts
+data:
+  elytron-default-client-context.cli: |
+    embed-server --server-config=standalone-ha.xml --std-out=echo
+    batch
+    /subsystem=elytron/key-store=default-trust-store:add(path="/certs/truststore.jks",credential-reference={clear-text="secret"})
+    /subsystem=elytron/trust-manager=default-trust-manager:add(key-store=default-trust-store,algorithm="PKIX")
+    /subsystem=elytron/key-store=default-key-store:add(path="/certs/keystore.jks",credential-reference={clear-text="secret"})
+    /subsystem=elytron/key-manager=default-key-manager:add(key-store=default-key-store,credential-reference={clear-text="secret"})
+    /subsystem=elytron/client-ssl-context=default-ssl-context:add(trust-manager=default-trust-manager, key-manager=default-key-manager)
+    /subsystem=elytron:write-attribute(name=default-ssl-context, value=default-ssl-context)
+    run-batch
+    stop-embedded-server
+---
+apiVersion: projectcontour.io/v1
+kind: HTTPProxy
+metadata:
+  name: keycloak
+spec:
+  virtualhost:
+    fqdn: keycloak.127-0-0-191.nip.io
+  routes:
+    - services:
+      - name: keycloak
+        port: 80
