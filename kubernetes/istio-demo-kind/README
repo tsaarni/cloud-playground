@@ -65,3 +65,16 @@ echo -e "GET / HTTP/1.0\r\n" | openssl s_client -cert /run/secrets/certs/tls.crt
 
 printf "GET / HTTP/1.1\nHost: echoserver\n\nQ\n" | openssl s_client -cert /run/secrets/certs/tls.crt -key /run/secrets/certs/tls.key -CAfile /run/secrets/ca
 /cacert.pem -connect echoserver.default:80 -quiet
+
+
+
+
+
+kubectl apply -f manifests/shell-without-sidecar.yaml
+
+kubectl exec -it shell-5cff55fb67-ddwf2 -- http http://istiod.istio-system:15014/metrics
+
+kubectl get pod echoserver-without-tls-5c59bf4694-m92mp -o yaml|grep podIP:
+kubectl exec -it shell-5cff55fb67-ddwf2 -- http http://10.244.1.4:15020/stats/prometheus
+kubectl exec -it shell-5cff55fb67-ddwf2 -- http http://10.244.1.4:15021/healthz/ready
+kubectl exec -it shell-5cff55fb67-ddwf2 -- http http://10.244.1.4:15090/stats/prometheus
