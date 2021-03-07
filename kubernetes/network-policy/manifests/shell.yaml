@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: shell
+  labels:
+    app: shell
+spec:
+  containers:
+    - name: shell
+      image: alpine:latest
+      command: ["/bin/sh"]
+      args:
+        - "-c"
+        - "apk add --update-cache httpie openssl netcat-openbsd nmap  && sleep 99999999"
+      securityContext:
+        privileged: true
