@@ -1,0 +1,97 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: root-drop-all-caps
+  labels:
+    app: root-drop-all-caps
+spec:
+  containers:
+    - name: root-drop-all-caps
+      image: quay.io/tsaarni/capabilities-test:latest
+      command: ["/bin/sh"]
+      args:
+        - "-c"
+        - "capsh --print && sleep 99999999"
+      securityContext:
+        capabilities:
+          drop:
+            - "ALL"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: root-drop-all-caps-add-bind
+  labels:
+    app: root-drop-all-caps-add-bind
+spec:
+  containers:
+    - name: root-drop-all-caps-add-bind
+      image: quay.io/tsaarni/capabilities-test:latest
+      command: ["/bin/sh"]
+      args:
+        - "-c"
+        - "capsh --print && sleep 99999999"
+      securityContext:
+        capabilities:
+          drop:
+            - all
+          add:
+            - "NET_BIND_SERVICE"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: non-root
+  labels:
+    app: non-root
+spec:
+  containers:
+    - name: non-root
+      image: quay.io/tsaarni/capabilities-test:latest
+      command: ["/bin/sh"]
+      args:
+        - "-c"
+        - "capsh --print && sleep 99999999"
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000 # needs to be commented out when running as tenant on openshift
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: non-root-privilege-escalation-false
+  labels:
+    app: non-root-privilege-escalation-false
+spec:
+  containers:
+    - name: non-root
+      image: quay.io/tsaarni/capabilities-test:latest
+      command: ["/bin/sh"]
+      args:
+        - "-c"
+        - "capsh --print && sleep 99999999"
+      securityContext:
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        runAsUser: 1000 # needs to be commented out when running as tenant on openshift
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: non-root-drop-all-caps
+  labels:
+    app: non-root-drop-all-caps
+spec:
+  containers:
+    - name: non-root-drop-all-caps
+      image: quay.io/tsaarni/capabilities-test:latest
+      command: ["/bin/sh"]
+      args:
+        - "-c"
+        - "capsh --print && sleep 99999999"
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000 # needs to be commented out when running as tenant on openshift
+        capabilities:
+          drop:
+            - all
