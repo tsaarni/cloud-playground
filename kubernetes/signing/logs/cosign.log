@@ -1,0 +1,395 @@
+
+################################################################################
+#
+#
+#     SIGN
+#
+#
+################################################################################
+
+
+cosign sign --key cosign.key registry.127-0-10-80.nip.io/alpine:latest
+
+
+GET /v2/ HTTP/1.1
+Host: registry.127-0-10-80.nip.io
+User-Agent: cosign/devel go-containerregistry/v0.6.1-0.20211111182346-7a6ee45528a9
+Accept-Encoding: gzip
+
+HTTP/1.1 200 OK
+Content-Length: 2
+Content-Type: application/json; charset=utf-8
+Docker-Distribution-Api-Version: registry/2.0
+X-Content-Type-Options: nosniff
+Date: Tue, 16 Nov 2021 14:20:30 GMT
+
+{}
+
+GET /v2/alpine/manifests/latest HTTP/1.1
+Host: registry.127-0-10-80.nip.io
+User-Agent: cosign/devel go-containerregistry/v0.6.1-0.20211111182346-7a6ee45528a9
+Accept: application/vnd.docker.distribution.manifest.v1+json,application/vnd.docker.distribution.manifest.v1+prettyjws,application/vnd.docker.distribution.manifest.v2+json,application/vnd.oci.image.manifest.v1+json,application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.oci.image.index.v1+json
+Accept-Encoding: gzip
+
+HTTP/1.1 200 OK
+Content-Length: 528
+Content-Type: application/vnd.docker.distribution.manifest.v2+json
+Docker-Content-Digest: sha256:5e604d3358ab7b6b734402ce2e19ddd822a354dc14843f34d36c603521dbb4f9
+Docker-Distribution-Api-Version: registry/2.0
+Etag: "sha256:5e604d3358ab7b6b734402ce2e19ddd822a354dc14843f34d36c603521dbb4f9"
+X-Content-Type-Options: nosniff
+Date: Tue, 16 Nov 2021 14:20:30 GMT
+
+{
+   "schemaVersion": 2,
+   "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+   "config": {
+      "mediaType": "application/vnd.docker.container.image.v1+json",
+      "size": 1471,
+      "digest": "sha256:0a97eee8041e2b6c0e65abb2700b0705d0da5525ca69060b9e0bde8a3d17afdb"
+   },
+   "layers": [
+      {
+         "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+         "size": 2822981,
+         "digest": "sha256:97518928ae5f3d52d4164b314a7e73654eb686ecd8aafa0b79acd980773a740d"
+      }
+   ]
+}
+
+GET /v2/ HTTP/1.1
+Host: registry.127-0-10-80.nip.io
+User-Agent: cosign/devel go-containerregistry/v0.6.1-0.20211111182346-7a6ee45528a9
+Accept-Encoding: gzip
+
+HTTP/1.1 200 OK
+Content-Length: 2
+Content-Type: application/json; charset=utf-8
+Docker-Distribution-Api-Version: registry/2.0
+X-Content-Type-Options: nosniff
+Date: Tue, 16 Nov 2021 14:20:30 GMT
+
+{}
+
+GET /v2/alpine/manifests/sha256-5e604d3358ab7b6b734402ce2e19ddd822a354dc14843f34d36c603521dbb4f9.sig HTTP/1.1
+Host: registry.127-0-10-80.nip.io
+User-Agent: cosign/devel go-containerregistry/v0.6.1-0.20211111182346-7a6ee45528a9
+Accept: application/vnd.docker.distribution.manifest.v1+json,application/vnd.docker.distribution.manifest.v1+prettyjws,application/vnd.docker.distribution.manifest.v2+json,application/vnd.oci.image.manifest.v1+json,application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.oci.image.index.v1+json
+Accept-Encoding: gzip
+
+HTTP/1.1 404 Not Found
+Content-Type: application/json; charset=utf-8
+Docker-Distribution-Api-Version: registry/2.0
+X-Content-Type-Options: nosniff
+Date: Tue, 16 Nov 2021 14:20:30 GMT
+Content-Length: 165
+
+{"errors":[{"code":"MANIFEST_UNKNOWN","message":"manifest unknown","detail":{"Tag":"sha256-5e604d3358ab7b6b734402ce2e19ddd822a354dc14843f34d36c603521dbb4f9.sig"}}]}
+
+
+
+
+################################ stream 2
+
+
+GET /v2/ HTTP/1.1
+Host: registry.127-0-10-80.nip.io
+User-Agent: cosign/devel go-containerregistry/v0.6.1-0.20211111182346-7a6ee45528a9
+Accept-Encoding: gzip
+
+HTTP/1.1 200 OK
+Content-Length: 2
+Content-Type: application/json; charset=utf-8
+Docker-Distribution-Api-Version: registry/2.0
+X-Content-Type-Options: nosniff
+Date: Tue, 16 Nov 2021 14:20:30 GMT
+
+{}
+
+HEAD /v2/alpine/blobs/sha256:ecb3307ab9e19b89992f3bb87ad646d8aef6604d93b808217462a7364c5e2651 HTTP/1.1
+Host: registry.127-0-10-80.nip.io
+User-Agent: cosign/devel go-containerregistry/v0.6.1-0.20211111182346-7a6ee45528a9
+
+HTTP/1.1 404 Not Found
+Content-Type: application/json; charset=utf-8
+Docker-Distribution-Api-Version: registry/2.0
+X-Content-Type-Options: nosniff
+Date: Tue, 16 Nov 2021 14:20:30 GMT
+Content-Length: 157
+
+HEAD /v2/alpine/blobs/sha256:3ac37e18dfff19e09920b1b47451595f33000f87ee327d8ea3176b5078f76ab8 HTTP/1.1
+Host: registry.127-0-10-80.nip.io
+User-Agent: cosign/devel go-containerregistry/v0.6.1-0.20211111182346-7a6ee45528a9
+
+HTTP/1.1 404 Not Found
+Content-Type: application/json; charset=utf-8
+Docker-Distribution-Api-Version: registry/2.0
+X-Content-Type-Options: nosniff
+Date: Tue, 16 Nov 2021 14:20:30 GMT
+Content-Length: 157
+
+POST /v2/alpine/blobs/uploads/ HTTP/1.1
+Host: registry.127-0-10-80.nip.io
+User-Agent: cosign/devel go-containerregistry/v0.6.1-0.20211111182346-7a6ee45528a9
+Content-Length: 0
+Content-Type: application/json
+Accept-Encoding: gzip
+
+HTTP/1.1 202 Accepted
+Content-Length: 0
+Docker-Distribution-Api-Version: registry/2.0
+Docker-Upload-Uuid: 52170539-31d2-47be-9465-fa87c76e6d88
+Location: https://registry.127-0-10-80.nip.io/v2/alpine/blobs/uploads/52170539-31d2-47be-9465-fa87c76e6d88?_state=Tr7cZfK_xWMYktMofo85gFJ2CkanbUjqmQI44srR9-l7Ik5hbWUiOiJhbHBpbmUiLCJVVUlEIjoiNTIxNzA1MzktMzFkMi00N2JlLTk0NjUtZmE4N2M3NmU2ZDg4IiwiT2Zmc2V0IjowLCJTdGFydGVkQXQiOiIyMDIxLTExLTE2VDE0OjIwOjMwLjQ2MzQ3NzA3MVoifQ%3D%3D
+Range: 0-0
+X-Content-Type-Options: nosniff
+Date: Tue, 16 Nov 2021 14:20:30 GMT
+
+PATCH /v2/alpine/blobs/uploads/52170539-31d2-47be-9465-fa87c76e6d88?_state=Tr7cZfK_xWMYktMofo85gFJ2CkanbUjqmQI44srR9-l7Ik5hbWUiOiJhbHBpbmUiLCJVVUlEIjoiNTIxNzA1MzktMzFkMi00N2JlLTk0NjUtZmE4N2M3NmU2ZDg4IiwiT2Zmc2V0IjowLCJTdGFydGVkQXQiOiIyMDIxLTExLTE2VDE0OjIwOjMwLjQ2MzQ3NzA3MVoifQ%3D%3D HTTP/1.1
+Host: registry.127-0-10-80.nip.io
+User-Agent: cosign/devel go-containerregistry/v0.6.1-0.20211111182346-7a6ee45528a9
+Transfer-Encoding: chunked
+Content-Type: application/octet-stream
+Accept-Encoding: gzip
+
+{"architecture":"","created":"0001-01-01T00:00:00Z","history":[{"created":"0001-01-01T00:00:00Z"}],"os":"","rootfs":{"type":"layers","diff_ids":["sha256:3ac37e18dfff19e09920b1b47451595f33000f87ee327d8ea3176b5078f76ab8"]},"config":{}}
+
+HTTP/1.1 202 Accepted
+Content-Length: 0
+Docker-Distribution-Api-Version: registry/2.0
+Docker-Upload-Uuid: 52170539-31d2-47be-9465-fa87c76e6d88
+Location: https://registry.127-0-10-80.nip.io/v2/alpine/blobs/uploads/52170539-31d2-47be-9465-fa87c76e6d88?_state=TYF-jwnLF_MsyPpX37sDIK7uYRQeGSLH29NiBJ2CKXN7Ik5hbWUiOiJhbHBpbmUiLCJVVUlEIjoiNTIxNzA1MzktMzFkMi00N2JlLTk0NjUtZmE4N2M3NmU2ZDg4IiwiT2Zmc2V0IjoyMzMsIlN0YXJ0ZWRBdCI6IjIwMjEtMTEtMTZUMTQ6MjA6MzBaIn0%3D
+Range: 0-232
+X-Content-Type-Options: nosniff
+Date: Tue, 16 Nov 2021 14:20:30 GMT
+
+PUT /v2/alpine/blobs/uploads/52170539-31d2-47be-9465-fa87c76e6d88?_state=TYF-jwnLF_MsyPpX37sDIK7uYRQeGSLH29NiBJ2CKXN7Ik5hbWUiOiJhbHBpbmUiLCJVVUlEIjoiNTIxNzA1MzktMzFkMi00N2JlLTk0NjUtZmE4N2M3NmU2ZDg4IiwiT2Zmc2V0IjoyMzMsIlN0YXJ0ZWRBdCI6IjIwMjEtMTEtMTZUMTQ6MjA6MzBaIn0%3D&digest=sha256%3Aecb3307ab9e19b89992f3bb87ad646d8aef6604d93b808217462a7364c5e2651 HTTP/1.1
+Host: registry.127-0-10-80.nip.io
+User-Agent: cosign/devel go-containerregistry/v0.6.1-0.20211111182346-7a6ee45528a9
+Content-Length: 0
+Content-Type: application/octet-stream
+Accept-Encoding: gzip
+
+HTTP/1.1 201 Created
+Content-Length: 0
+Docker-Content-Digest: sha256:ecb3307ab9e19b89992f3bb87ad646d8aef6604d93b808217462a7364c5e2651
+Docker-Distribution-Api-Version: registry/2.0
+Location: https://registry.127-0-10-80.nip.io/v2/alpine/blobs/sha256:ecb3307ab9e19b89992f3bb87ad646d8aef6604d93b808217462a7364c5e2651
+X-Content-Type-Options: nosniff
+Date: Tue, 16 Nov 2021 14:20:30 GMT
+
+
+######################################## stream 3
+
+POST /v2/alpine/blobs/uploads/ HTTP/1.1
+Host: registry.127-0-10-80.nip.io
+User-Agent: cosign/devel go-containerregistry/v0.6.1-0.20211111182346-7a6ee45528a9
+Content-Length: 0
+Content-Type: application/json
+Accept-Encoding: gzip
+
+HTTP/1.1 202 Accepted
+Content-Length: 0
+Docker-Distribution-Api-Version: registry/2.0
+Docker-Upload-Uuid: 3cbdbf83-d155-4a66-9597-9c2097ab78fb
+Location: https://registry.127-0-10-80.nip.io/v2/alpine/blobs/uploads/3cbdbf83-d155-4a66-9597-9c2097ab78fb?_state=ZH0xGwnmUTeB060SRJGfDo7jycOXoHnmDDpmcnszYK17Ik5hbWUiOiJhbHBpbmUiLCJVVUlEIjoiM2NiZGJmODMtZDE1NS00YTY2LTk1OTctOWMyMDk3YWI3OGZiIiwiT2Zmc2V0IjowLCJTdGFydGVkQXQiOiIyMDIxLTExLTE2VDE0OjIwOjMwLjQ2Mzg4MjYyWiJ9
+Range: 0-0
+X-Content-Type-Options: nosniff
+Date: Tue, 16 Nov 2021 14:20:30 GMT
+
+PATCH /v2/alpine/blobs/uploads/3cbdbf83-d155-4a66-9597-9c2097ab78fb?_state=ZH0xGwnmUTeB060SRJGfDo7jycOXoHnmDDpmcnszYK17Ik5hbWUiOiJhbHBpbmUiLCJVVUlEIjoiM2NiZGJmODMtZDE1NS00YTY2LTk1OTctOWMyMDk3YWI3OGZiIiwiT2Zmc2V0IjowLCJTdGFydGVkQXQiOiIyMDIxLTExLTE2VDE0OjIwOjMwLjQ2Mzg4MjYyWiJ9 HTTP/1.1
+Host: registry.127-0-10-80.nip.io
+User-Agent: cosign/devel go-containerregistry/v0.6.1-0.20211111182346-7a6ee45528a9
+Transfer-Encoding: chunked
+Content-Type: application/octet-stream
+Accept-Encoding: gzip
+
+{"critical":{"identity":{"docker-reference":"registry.127-0-10-80.nip.io/alpine"},"image":{"docker-manifest-digest":"sha256:5e604d3358ab7b6b734402ce2e19ddd822a354dc14843f34d36c603521dbb4f9"},"type":"cosign container image signature"},"optional":null}
+
+HTTP/1.1 202 Accepted
+Content-Length: 0
+Docker-Distribution-Api-Version: registry/2.0
+Docker-Upload-Uuid: 3cbdbf83-d155-4a66-9597-9c2097ab78fb
+Location: https://registry.127-0-10-80.nip.io/v2/alpine/blobs/uploads/3cbdbf83-d155-4a66-9597-9c2097ab78fb?_state=2-YrU18datUoysDPtN99R4JBoumcGFQTKw6pxmeWgcZ7Ik5hbWUiOiJhbHBpbmUiLCJVVUlEIjoiM2NiZGJmODMtZDE1NS00YTY2LTk1OTctOWMyMDk3YWI3OGZiIiwiT2Zmc2V0IjoyNTAsIlN0YXJ0ZWRBdCI6IjIwMjEtMTEtMTZUMTQ6MjA6MzBaIn0%3D
+Range: 0-249
+X-Content-Type-Options: nosniff
+Date: Tue, 16 Nov 2021 14:20:30 GMT
+
+PUT /v2/alpine/blobs/uploads/3cbdbf83-d155-4a66-9597-9c2097ab78fb?_state=2-YrU18datUoysDPtN99R4JBoumcGFQTKw6pxmeWgcZ7Ik5hbWUiOiJhbHBpbmUiLCJVVUlEIjoiM2NiZGJmODMtZDE1NS00YTY2LTk1OTctOWMyMDk3YWI3OGZiIiwiT2Zmc2V0IjoyNTAsIlN0YXJ0ZWRBdCI6IjIwMjEtMTEtMTZUMTQ6MjA6MzBaIn0%3D&digest=sha256%3A3ac37e18dfff19e09920b1b47451595f33000f87ee327d8ea3176b5078f76ab8 HTTP/1.1
+Host: registry.127-0-10-80.nip.io
+User-Agent: cosign/devel go-containerregistry/v0.6.1-0.20211111182346-7a6ee45528a9
+Content-Length: 0
+Content-Type: application/octet-stream
+Accept-Encoding: gzip
+
+HTTP/1.1 201 Created
+Content-Length: 0
+Docker-Content-Digest: sha256:3ac37e18dfff19e09920b1b47451595f33000f87ee327d8ea3176b5078f76ab8
+Docker-Distribution-Api-Version: registry/2.0
+Location: https://registry.127-0-10-80.nip.io/v2/alpine/blobs/sha256:3ac37e18dfff19e09920b1b47451595f33000f87ee327d8ea3176b5078f76ab8
+X-Content-Type-Options: nosniff
+Date: Tue, 16 Nov 2021 14:20:30 GMT
+
+PUT /v2/alpine/manifests/sha256-5e604d3358ab7b6b734402ce2e19ddd822a354dc14843f34d36c603521dbb4f9.sig HTTP/1.1
+Host: registry.127-0-10-80.nip.io
+User-Agent: cosign/devel go-containerregistry/v0.6.1-0.20211111182346-7a6ee45528a9
+Content-Length: 501
+Content-Type: application/vnd.oci.image.manifest.v1+json
+Accept-Encoding: gzip
+
+{"schemaVersion":2,"config":{"mediaType":"application/vnd.oci.image.config.v1+json","size":233,"digest":"sha256:ecb3307ab9e19b89992f3bb87ad646d8aef6604d93b808217462a7364c5e2651"},"layers":[{"mediaType":"application/vnd.dev.cosign.simplesigning.v1+json","size":250,"digest":"sha256:3ac37e18dfff19e09920b1b47451595f33000f87ee327d8ea3176b5078f76ab8","annotations":{"dev.cosignproject.cosign/signature":"MEQCIGflbaI5K4VKXxcLSg+YltcwjHvETp0Ll3+Wntsw0XJgAiAHTT/NX246Nf+LJhEMO0B+JbmVjj/nvDOBFdjyr4JGuQ=="}}]}
+
+HTTP/1.1 201 Created
+Docker-Content-Digest: sha256:1165db47db0b1c160ee5b3320fce1d653f31835dff3de5d3fa16ea7b73534afc
+Docker-Distribution-Api-Version: registry/2.0
+Location: https://registry.127-0-10-80.nip.io/v2/alpine/manifests/sha256:1165db47db0b1c160ee5b3320fce1d653f31835dff3de5d3fa16ea7b73534afc
+X-Content-Type-Options: nosniff
+Date: Tue, 16 Nov 2021 14:20:30 GMT
+Content-Length: 0
+
+
+
+
+################################################################################
+#
+#
+#     VERIFY
+#
+#
+################################################################################
+
+
+cosign verify --key cosign.pub registry.127-0-10-80.nip.io/alpine:latest
+
+
+
+
+GET /v2/ HTTP/1.1
+Host: registry.127-0-10-80.nip.io
+User-Agent: cosign/devel go-containerregistry/v0.6.1-0.20211111182346-7a6ee45528a9
+Accept-Encoding: gzip
+
+HTTP/1.1 200 OK
+Content-Length: 2
+Content-Type: application/json; charset=utf-8
+Docker-Distribution-Api-Version: registry/2.0
+X-Content-Type-Options: nosniff
+Date: Tue, 16 Nov 2021 14:20:36 GMT
+
+{}
+
+GET /v2/alpine/manifests/latest HTTP/1.1
+Host: registry.127-0-10-80.nip.io
+User-Agent: cosign/devel go-containerregistry/v0.6.1-0.20211111182346-7a6ee45528a9
+Accept: application/vnd.docker.distribution.manifest.v1+json,application/vnd.docker.distribution.manifest.v1+prettyjws,application/vnd.docker.distribution.manifest.v2+json,application/vnd.oci.image.manifest.v1+json,application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.oci.image.index.v1+json
+Accept-Encoding: gzip
+
+HTTP/1.1 200 OK
+Content-Length: 528
+Content-Type: application/vnd.docker.distribution.manifest.v2+json
+Docker-Content-Digest: sha256:5e604d3358ab7b6b734402ce2e19ddd822a354dc14843f34d36c603521dbb4f9
+Docker-Distribution-Api-Version: registry/2.0
+Etag: "sha256:5e604d3358ab7b6b734402ce2e19ddd822a354dc14843f34d36c603521dbb4f9"
+X-Content-Type-Options: nosniff
+Date: Tue, 16 Nov 2021 14:20:36 GMT
+
+{
+   "schemaVersion": 2,
+   "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+   "config": {
+      "mediaType": "application/vnd.docker.container.image.v1+json",
+      "size": 1471,
+      "digest": "sha256:0a97eee8041e2b6c0e65abb2700b0705d0da5525ca69060b9e0bde8a3d17afdb"
+   },
+   "layers": [
+      {
+         "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+         "size": 2822981,
+         "digest": "sha256:97518928ae5f3d52d4164b314a7e73654eb686ecd8aafa0b79acd980773a740d"
+      }
+   ]
+}
+
+GET /v2/ HTTP/1.1
+Host: registry.127-0-10-80.nip.io
+User-Agent: cosign/devel go-containerregistry/v0.6.1-0.20211111182346-7a6ee45528a9
+Accept-Encoding: gzip
+
+HTTP/1.1 200 OK
+Content-Length: 2
+Content-Type: application/json; charset=utf-8
+Docker-Distribution-Api-Version: registry/2.0
+X-Content-Type-Options: nosniff
+Date: Tue, 16 Nov 2021 14:20:36 GMT
+
+{}
+
+GET /v2/alpine/manifests/sha256-5e604d3358ab7b6b734402ce2e19ddd822a354dc14843f34d36c603521dbb4f9.sig HTTP/1.1
+Host: registry.127-0-10-80.nip.io
+User-Agent: cosign/devel go-containerregistry/v0.6.1-0.20211111182346-7a6ee45528a9
+Accept: application/vnd.docker.distribution.manifest.v1+json,application/vnd.docker.distribution.manifest.v1+prettyjws,application/vnd.docker.distribution.manifest.v2+json,application/vnd.oci.image.manifest.v1+json,application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.oci.image.index.v1+json
+Accept-Encoding: gzip
+
+HTTP/1.1 200 OK
+Content-Length: 501
+Content-Type: application/vnd.oci.image.manifest.v1+json
+Docker-Content-Digest: sha256:1165db47db0b1c160ee5b3320fce1d653f31835dff3de5d3fa16ea7b73534afc
+Docker-Distribution-Api-Version: registry/2.0
+Etag: "sha256:1165db47db0b1c160ee5b3320fce1d653f31835dff3de5d3fa16ea7b73534afc"
+X-Content-Type-Options: nosniff
+Date: Tue, 16 Nov 2021 14:20:36 GMT
+
+{"schemaVersion":2,"config":{"mediaType":"application/vnd.oci.image.config.v1+json","size":233,"digest":"sha256:ecb3307ab9e19b89992f3bb87ad646d8aef6604d93b808217462a7364c5e2651"},"layers":[{"mediaType":"application/vnd.dev.cosign.simplesigning.v1+json","size":250,"digest":"sha256:3ac37e18dfff19e09920b1b47451595f33000f87ee327d8ea3176b5078f76ab8","annotations":{"dev.cosignproject.cosign/signature":"MEQCIGflbaI5K4VKXxcLSg+YltcwjHvETp0Ll3+Wntsw0XJgAiAHTT/NX246Nf+LJhEMO0B+JbmVjj/nvDOBFdjyr4JGuQ=="}}]}
+
+GET /v2/alpine/blobs/sha256:3ac37e18dfff19e09920b1b47451595f33000f87ee327d8ea3176b5078f76ab8 HTTP/1.1
+Host: registry.127-0-10-80.nip.io
+User-Agent: cosign/devel go-containerregistry/v0.6.1-0.20211111182346-7a6ee45528a9
+Accept-Encoding: gzip
+
+HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Cache-Control: max-age=31536000
+Content-Length: 250
+Content-Type: application/octet-stream
+Docker-Content-Digest: sha256:3ac37e18dfff19e09920b1b47451595f33000f87ee327d8ea3176b5078f76ab8
+Docker-Distribution-Api-Version: registry/2.0
+Etag: "sha256:3ac37e18dfff19e09920b1b47451595f33000f87ee327d8ea3176b5078f76ab8"
+X-Content-Type-Options: nosniff
+Date: Tue, 16 Nov 2021 14:20:36 GMT
+
+{"critical":{"identity":{"docker-reference":"registry.127-0-10-80.nip.io/alpine"},"image":{"docker-manifest-digest":"sha256:5e604d3358ab7b6b734402ce2e19ddd822a354dc14843f34d36c603521dbb4f9"},"type":"cosign container image signature"},"optional":null}
+
+GET /v2/alpine/blobs/sha256:3ac37e18dfff19e09920b1b47451595f33000f87ee327d8ea3176b5078f76ab8 HTTP/1.1
+Host: registry.127-0-10-80.nip.io
+User-Agent: cosign/devel go-containerregistry/v0.6.1-0.20211111182346-7a6ee45528a9
+Accept-Encoding: gzip
+
+HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Cache-Control: max-age=31536000
+Content-Length: 250
+Content-Type: application/octet-stream
+Docker-Content-Digest: sha256:3ac37e18dfff19e09920b1b47451595f33000f87ee327d8ea3176b5078f76ab8
+Docker-Distribution-Api-Version: registry/2.0
+Etag: "sha256:3ac37e18dfff19e09920b1b47451595f33000f87ee327d8ea3176b5078f76ab8"
+X-Content-Type-Options: nosniff
+Date: Tue, 16 Nov 2021 14:20:36 GMT
+
+{"critical":{"identity":{"docker-reference":"registry.127-0-10-80.nip.io/alpine"},"image":{"docker-manifest-digest":"sha256:5e604d3358ab7b6b734402ce2e19ddd822a354dc14843f34d36c603521dbb4f9"},"type":"cosign container image signature"},"optional":null}
+
+GET /v2/alpine/blobs/sha256:3ac37e18dfff19e09920b1b47451595f33000f87ee327d8ea3176b5078f76ab8 HTTP/1.1
+Host: registry.127-0-10-80.nip.io
+User-Agent: cosign/devel go-containerregistry/v0.6.1-0.20211111182346-7a6ee45528a9
+Accept-Encoding: gzip
+
+HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Cache-Control: max-age=31536000
+Content-Length: 250
+Content-Type: application/octet-stream
+Docker-Content-Digest: sha256:3ac37e18dfff19e09920b1b47451595f33000f87ee327d8ea3176b5078f76ab8
+Docker-Distribution-Api-Version: registry/2.0
+Etag: "sha256:3ac37e18dfff19e09920b1b47451595f33000f87ee327d8ea3176b5078f76ab8"
+X-Content-Type-Options: nosniff
+Date: Tue, 16 Nov 2021 14:20:36 GMT
+
+{"critical":{"identity":{"docker-reference":"registry.127-0-10-80.nip.io/alpine"},"image":{"docker-manifest-digest":"sha256:5e604d3358ab7b6b734402ce2e19ddd822a354dc14843f34d36c603521dbb4f9"},"type":"cosign container image signature"},"optional":null}

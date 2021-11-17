@@ -1,0 +1,128 @@
+
+
+git clone https://github.com/sigstore/cosign
+cd cosign
+go install ./cmd/cosign
+
+
+
+
+
+# Generate certificates for the server
+mkdir -p certs
+certyaml -d certs configs/certs.yaml
+
+
+docker run --rm -p 127.0.10.80:443:443 -v $PWD/certs:/certs:ro -e REGISTRY_HTTP_ADDR=0.0.0.0:443 -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/registry.pem -e REGISTRY_HTTP_TLS_KEY=/certs/registry-key.pem registry:2
+docker run --rm -p 127.0.10.81:443:443 -v $PWD/certs:/certs:ro -e REGISTRY_HTTP_ADDR=0.0.0.0:443 -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/registry.pem -e REGISTRY_HTTP_TLS_KEY=/certs/registry-key.pem registry:2
+
+
+sudo mkdir -p /etc/docker/certs.d/registry.127-0-10-80.nip.io
+sudo chown $USER /etc/docker/certs.d/registry.127-0-10-80.nip.io
+cp certs/ca.pem /etc/docker/certs.d/registry.127-0-10-80.nip.io/ca.crt
+
+
+
+
+# generate key-pair (will ask for a password)
+cosign generate-key-pair
+
+
+# key will look like
+
+-----BEGIN ENCRYPTED COSIGN PRIVATE KEY-----
+....
+<JSON payload in base64 encoding>
+...
+-----END ENCRYPTED COSIGN PRIVATE KEY-----
+
+
+$ grep -v COSIGN cosign.key | base64 -d | jq .
+{
+  "kdf": {
+    "name": "scrypt",
+    "params": {
+      "N": 32768,
+      "r": 8,
+      "p": 1
+    },
+    "salt": "2uOTbDlPloKgp/RltfAAIsDh5u6cp+QGyakDPn99tMs="
+  },
+  "cipher": {
+    "name": "nacl/secretbox",
+    "nonce": "4JqOUzyeWCOSUDarzGPStsWdhRz//9hS"
+  },
+  "ciphertext": "E8sH0vloX4VE78I1plrt4fEJs9Bslg9vaFTaEgk2EbF1ZZNvK2Y0PKT/B3mhbVKRC8WQaH7JtKm6wMWxNkEb0T8yOz+bdaDUGNw7pdktTURBBh+DRaeyWNgzpx3PwD2ME5beC1WlwMJhgTHum1eNj2GlwjIxmd74BltaMR7wmxGDHEh4d5XP3iQNw6iheZIdo6j0W3CKLnn7MA=="
+}
+
+
+
+# setting CA certificate for cosign
+# See go containerregistry issue
+#    https://github.com/google/go-containerregistry/issues/211
+export SSL_CERT_FILE=certs/ca.pem
+
+
+docker pull alpine:latest
+docker tag alpine:latest registry.127-0-10-80.nip.io/alpine:latest
+docker push registry.127-0-10-80.nip.io/alpine:latest
+
+
+
+cosign sign --key cosign.key registry.127-0-10-80.nip.io/alpine:latest
+cosign verify --key cosign.pub registry.127-0-10-80.nip.io/alpine:latest
+cosign copy registry.127-0-10-80.nip.io/alpine:latest registry.127-0-10-81.nip.io/alpine:latest
+
+
+Verification for registry.127-0-10-80.nip.io/alpine:latest --
+The following checks were performed on each of these signatures:
+  - The cosign claims were validated
+  - The signatures were verified against the specified public key
+  - Any certificates were verified against the Fulcio roots.
+
+[{"critical":{"identity":{"docker-reference":"registry.127-0-10-80.nip.io/alpine"},"image":{"docker-manifest-digest":"sha256:5e604d3358ab7b6b734402ce2e19ddd822a354dc14843f34d36c603521dbb4f9"},"type":"cosign container image signature"},"optional":null}]
+
+
+
+
+
+
+
+
+skopeo inspect --raw docker://registry.127-0-10-80.nip.io/alpine:latest | jq .
+
+
+skopeo inspect --config --raw docker://registry.127-0-10-80.nip.io/alpine:latest | jq .
+http --verify=certs/ca.pem https://registry.127-0-10-80.nip.io/v2/alpine/manifests/sha256-5e604d3358ab7b6b734402ce2e19ddd822a354dc14843f34d36c603521dbb4f9.sig Accept:application/vnd.oci.image.manifest.v1+json
+
+
+
+
+
+
+
+wireshark -i lo -f "port 443" -k -o tls.keylog_file:wireshark-keys.log
+
+
+diff --git a/cmd/cosign/cli/options/registry.go b/cmd/cosign/cli/options/registry.go
+index 9d78c9f..6c98b02 100644
+--- a/cmd/cosign/cli/options/registry.go
++++ b/cmd/cosign/cli/options/registry.go
+@@ -18,6 +18,7 @@ import (
+        "context"
+        "crypto/tls"
+        "net/http"
++       "os"
+
+        "github.com/google/go-containerregistry/pkg/authn"
+        "github.com/google/go-containerregistry/pkg/authn/k8schain"
+@@ -78,6 +79,9 @@ func (o *RegistryOptions) GetRegistryClientOpts(ctx context.Context) []remote.Op
+                opts = append(opts, remote.WithAuthFromKeychain(kc))
+        } else {
+                opts = append(opts, remote.WithAuthFromKeychain(authn.DefaultKeychain))
++               f, _ := os.OpenFile("wireshark-keys.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
++               opts = append(opts, remote.WithTransport(&http.Transport{TLSClientConfig: &tls.Config{KeyLogWriter: f}}))
++
+        }
+
+        if o != nil && o.AllowInsecure {
