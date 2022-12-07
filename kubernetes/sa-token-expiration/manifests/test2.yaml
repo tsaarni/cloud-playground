@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp2
+spec:
+  selector:
+    matchLabels:
+      app: myapp2
+  template:
+    metadata:
+      labels:
+        app: myapp2
+    spec:
+      containers:
+      - name: myapp2
+        image: alpine:latest
+        command:
+          - "/bin/sh"
+        args:
+          - "-c"
+          - "apk add --update-cache py3-pip httpie openssl netcat-openbsd py3-jwt && sleep 99999999"

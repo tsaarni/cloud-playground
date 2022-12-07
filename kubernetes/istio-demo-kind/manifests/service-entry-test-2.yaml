@@ -1,0 +1,70 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: external-svc-https
+spec:
+  hosts:
+  - dl-cdn.alpinelinux.org  # for apk to work
+  location: MESH_EXTERNAL
+  ports:
+  - number: 443
+    name: https
+    protocol: TLS
+  resolution: DNS
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: test
+spec:
+  hosts:
+  - admin.127-0-0-1.nip.io
+  location: MESH_EXTERNAL
+  ports:
+  - number: 15000
+    name: http
+    protocol: HTTP
+  resolution: DNS
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+ name: istio-egressgateway
+spec:
+ selector:
+   istio: egressgateway
+ servers:
+ - port:
+     number: 80
+     name: http
+     protocol: HTTP
+   hosts:
+   - "*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: gateway-routing
+spec:
+  hosts:
+  - httpbin.org
+  gateways:
+  - mesh
+  - istio-egressgateway
+  http:
+  - match:
+    - port: 80
+      gateways:
+      - mesh
+    route:
+    - destination:
+        host: istio-egressgateway.istio-system.svc.cluster.local
+  - match:
+    - port: 80
+      gateways:
+      - istio-egressgateway
+    route:
+    - destination:
+        host: admin.127-0-0-1.nip.io
+        port:
+          number: 15000

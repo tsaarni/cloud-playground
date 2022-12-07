@@ -1,7 +1,15 @@
-subject: cn=ca-cert
+subject: cn=external-ca
+---
+subject: cn=host1
+issuer: cn=external-ca
+sans:
+- DNS:host1.127-0-0-111.nip.io
+- DNS:admin.127-0-0-111.nip.io
+---
+subject: cn=internal-ca
 ---
 subject: cn=client
-issuer: cn=ca-cert
+issuer: cn=internal-ca
 sans:
 - DNS:foo.bar.baz
 - URI:spiffe://cluster.local/ns/foo/sa/bar

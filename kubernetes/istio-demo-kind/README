@@ -1,34 +1,54 @@
 
 
+*** Install demo setup
+
+# create cluster
+kind delete cluster --name istio
 kind create cluster --config configs/kind-cluster-config.yaml --name istio
 
-
 # Download istio release from https://github.com/istio/istio/releases
-wget https://github.com/istio/istio/releases/download/1.6.12/istio-1.6.12-linux-amd64.tar.gz
-tar zxvf istio-1.6.12-linux-amd64.tar.gz
-export PATH=$PATH:$PWD/istio-1.6.12/bin
+wget https://github.com/istio/istio/releases/download/1.9.7/istio-1.9.7-linux-amd64.tar.gz
+tar zxvf istio-*.tar.gz && rm istio-*.tar.gz
+export PATH=$PATH:$(cd istio-*/bin; pwd)
 
+istioctl install --set profile=demo
+istioctl install --set profile=demo --set meshConfig.outboundTrafficPolicy.mode=REGISTRY_ONLY
 
-# list all profiles
-istioctl profile list
+# edit the nodePorts for http2 and https to 80 and 443
+kubectl -n istio-system patch service istio-ingressgateway --patch-file=manifest/patch-change-nodeports.yaml
 
-
-istioctl install --set profile=minimal
-istioctl profile dump minimal
-
-
-istioctl profile dump   # current???
-kubectl -n istio-system get istiooperator installed-state -o yaml
-
-
-istioctl profile dump demo
-
-
+# enable sidecar injection
 kubectl label namespace default istio-injection=enabled
+
+# generate certificates (https://github.com/tsaarni/certyaml/)
+mkdir -p certs
+certyaml --destination certs configs/certs.yaml
+kubectl create -n istio-system secret tls host1-cert --cert=certs/host1.pem --key=certs/host1-key.pem --dry-run=client -o yaml | kubectl apply -f -
+
+# install echoserver
 kubectl apply -f manifests/echoserver-without-tls.yaml
 
-
+# test that the service can be accessed
 http http://host1.127-0-0-111.nip.io/
+http --verify=certs/external-ca.pem https://host1.127-0-0-111.nip.io/
+
+
+
+
+
+
+*** Commands
+
+istioctl profile list                    # list all profiles
+istioctl install --set profile=[name]    # install with a profile config
+istioctl profile dump minimal            # dump configuration for a profile
+
+kubectl -n istio-system get istiooperator installed-state -o yaml   # dump current profile
+
+
+
+*** Misc
+
 
 
 kubectl create ns outside-mesh
@@ -78,3 +98,36 @@ kubectl get pod echoserver-without-tls-5c59bf4694-m92mp -o yaml|grep podIP:
 kubectl exec -it shell-5cff55fb67-ddwf2 -- http http://10.244.1.4:15020/stats/prometheus
 kubectl exec -it shell-5cff55fb67-ddwf2 -- http http://10.244.1.4:15021/healthz/ready
 kubectl exec -it shell-5cff55fb67-ddwf2 -- http http://10.244.1.4:15090/stats/prometheus
+
+
+
+
+
+
+
+make docker.pilot
+docker tag istio/pilot:$(git show -s --format=%H) istio/pilot:latest
+kind load docker-image --name istio istio/pilot:latest
+
+cat <<EOF | kubectl -n istio-system patch deployment istiod --patch-file=/dev/stdin
+spec:
+  template:
+    spec:
+      containers:
+      - name: discovery
+        image: istio/pilot:latest
+        imagePullPolicy: Never
+EOF
+
+kubectl -n istio-system rollout restart deployment/istiod
+
+
+
+
+---
+
+kubectl -n istio-system port-forward deployment/istio-ingressgateway 15000
+http localhost:15000/config_dump | jq -C . | less
+
+
+

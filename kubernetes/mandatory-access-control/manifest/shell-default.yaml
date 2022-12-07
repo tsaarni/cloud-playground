@@ -11,6 +11,5 @@ spec:
       command: ["/bin/sh"]
       args:
         - "-c"
-        - "apk add --update-cache py3-setuptools httpie openssl netcat-openbsd && sleep 99999999"
-      securityContext:
-        privileged: true
+        - "sleep 99999999"
+

@@ -126,3 +126,19 @@ index 9d78c9f..6c98b02 100644
         }
 
         if o != nil && o.AllowInsecure {
+
+
+
+
+https://github.com/sigstore/cosign#payload-formats
+https://www.redhat.com/en/blog/container-image-signing
+
+https://github.com/Nordix/airship-clusterapi-docs/tree/cosign-container-signing-jan/container-signing
+
+
+https://dlorenc.medium.com/notary-v2-and-cosign-b816658f044d
+
+
+ https://dlorenc.medium.com/using-the-update-framework-in-sigstore-dc393cfe6b52
+
+ https://github.com/sigstore/cosign#base-imagelayer-signing

@@ -1,0 +1,137 @@
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: no-forced-uid
+  labels:
+    app: no-forced-uid
+spec:
+  containers:
+    - name: no-forced-uid
+      image: quay.io/tsaarni/capabilities-test:latest
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: run-as-root-add-caps
+  labels:
+    app: run-as-root-add-caps
+spec:
+  containers:
+    - name: run-as-root-add-caps
+      image: quay.io/tsaarni/capabilities-test:latest
+      securityContext:
+        runAsUser: 0
+        capabilities:
+          add:
+            - NET_RAW
+            - NET_ADMIN
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: run-as-root-with-bound-service-account
+  labels:
+    app: run-as-root-with-bound-service-account
+spec:
+  containers:
+    - name: run-as-root-with-bound-service-account
+      image: quay.io/tsaarni/capabilities-test:latest
+      securityContext:
+        runAsUser: 0
+  serviceAccountName: bound-service-account
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: run-as-root-with-unbound-service-account
+  labels:
+    app: run-as-root-with-unbound-service-account
+spec:
+  containers:
+    - name: run-as-root-with-unbound-service-account
+      image: quay.io/tsaarni/capabilities-test:latest
+      securityContext:
+        runAsUser: 0
+  serviceAccountName: unbound-service-account
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: with-sys-admin-capability
+  labels:
+    app: with-sys-admin-capability
+spec:
+  containers:
+    - name: with-sys-admin-capability
+      image: quay.io/tsaarni/capabilities-test:latest
+      securityContext:
+        runAsUser: 0
+        capabilities:
+          add:
+            - SYS_ADMIN
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: drop-all-caps
+  labels:
+    app: with-sys-admin-capability
+spec:
+  containers:
+    - name: with-sys-admin-capability
+      image: quay.io/tsaarni/capabilities-test:latest
+      securityContext:
+        runAsUser: 0
+        capabilities:
+          add:
+            - SYS_ADMIN
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: from-deployment-with-bound-service-account
+  labels:
+    app: from-deployment-with-bound-service-account
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: from-deployment-with-bound-service-account
+  template:
+    metadata:
+      labels:
+        app: from-deployment-with-bound-service-account
+    spec:
+      containers:
+        - name: from-deployment-with-bound-service-account
+          image: quay.io/tsaarni/capabilities-test:latest
+          securityContext:
+            runAsUser: 0
+      serviceAccountName: bound-service-account
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: from-deployment-with-unbound-service-account
+  labels:
+    app: from-deployment-with-unbound-service-account
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: from-deployment-with-unbound-service-account
+  template:
+    metadata:
+      labels:
+        app: from-deployment-with-unbound-service-account
+    spec:
+      containers:
+        - name: from-deployment-with-unbound-service-account
+          image: quay.io/tsaarni/capabilities-test:latest
+          securityContext:
+            runAsNonRoot: false
+            runAsUser: 0
+      serviceAccountName: unbound-service-account

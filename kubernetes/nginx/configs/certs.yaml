@@ -1,0 +1,19 @@
+subject: cn=external-root-ca
+---
+subject: cn=internal-root-ca
+---
+subject: cn=user-root-ca
+---
+issuer: cn=external-root-ca
+subject: cn=ingress
+sans:
+- DNS:ingress.127-0-0-133.nip.io
+---
+issuer: cn=internal-root-ca
+subject: cn=nginx-client
+---
+issuer: cn=internal-root-ca
+subject: cn=echoserver-1
+---
+issuer: cn=internal-root-ca
+subject: cn=echoserver-2 

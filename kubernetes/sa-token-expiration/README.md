@@ -94,14 +94,14 @@ EOF
 vault server -log-level=debug -config config.hcl
 
 http -v POST http://vault:8200/v1/sys/init secret_shares:=1 secret_threshold:=1
-http -v POST http://vault:8200/v1/sys/unseal key=    # copy unseal key
+http -v POST http://vault:8200/v1/sys/unseal key=    # from "keys" field in init response
 ```
 
 Configure Kubernetes Auth Method
 
 ```console
 kubectl exec -it vault-client -- ash
-export ROOT_TOKEN=   # copy root token
+export ROOT_TOKEN=   # from "root_token" field in init response
 http -v POST http://vault:8200/v1/sys/auth/kubernetes X-Vault-Token:$ROOT_TOKEN type=kubernetes
 http -v POST http://vault:8200/v1/auth/kubernetes/config X-Vault-Token:$ROOT_TOKEN kubernetes_host=https://kubernetes disable_iss_validation=True
 http -v POST http://vault:8200/v1/sys/policy/demo X-Vault-Token:$ROOT_TOKEN policy="path \"secret/demo/*\" { capabilities = [\"create\", \"read\", \"update\", \"delete\", \"list\"] }"
@@ -114,4 +114,28 @@ Use the projected service account with vault as audience
 http -v POST http://vault:8200/v1/auth/kubernetes/login role=demo-role jwt=@/var/run/secrets/kubernetes.io/serviceaccount/token
 http -v POST http://vault:8200/v1/auth/kubernetes/login role=demo-role jwt=@/projected/token
 
+```
+
+## Accessing the legacy token
+
+```console
+# Create service account
+$ cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-service-account
+EOF
+
+# Find out the generated secret name
+$ kubectl get secrets | grep my-service-account
+
+# Access the token via the secret
+$ kubectl get secret my-service-account-token-chdd8 -o jsonpath={.data.token} | base64 -d | python3 -c "import jwt, time, sys, pprint; t = jwt.decode(sys.stdin.read(), verify=False); pprint.pprint(t)"
+{'iss': 'kubernetes/serviceaccount',
+ 'kubernetes.io/serviceaccount/namespace': 'default',
+ 'kubernetes.io/serviceaccount/secret.name': 'my-service-account-token-chdd8',
+ 'kubernetes.io/serviceaccount/service-account.name': 'my-service-account',
+ 'kubernetes.io/serviceaccount/service-account.uid': 'd5a74d52-9f1f-45d7-8240-3db9946fcd1b',
+ 'sub': 'system:serviceaccount:default:my-service-account'}
 ```

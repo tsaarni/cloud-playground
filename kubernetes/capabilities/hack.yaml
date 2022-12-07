@@ -1,0 +1,155 @@
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: unbound-service-account
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: normal-pod
+  labels:
+    app: normal-pod
+spec:
+  containers:
+    - name: hack
+      image: quay.io/tsaarni/capabilities-test:latest
+      command: ["/bin/sh"]
+      args:
+        - "-c"
+        - "grep Cap /proc/1/status && capsh --print && sleep 99999999"
+      securityContext:
+        runAsNonRoot: true
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: run-as-root
+  labels:
+    app: run-as-root
+spec:
+  containers:
+    - name: run-as-root
+      image: quay.io/tsaarni/capabilities-test:latest
+      command: ["/bin/sh"]
+      args:
+        - "-c"
+        - "grep Cap /proc/1/status && capsh --print && sleep 99999999"
+      securityContext:
+        runAsNonRoot: false
+        runAsUser: 0
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: run-as-root-add-caps
+  labels:
+    app: run-as-root-add-caps
+spec:
+  containers:
+    - name: run-as-root-add-caps
+      image: quay.io/tsaarni/capabilities-test:latest
+      command: ["/bin/sh"]
+      args:
+        - "-c"
+        - "grep Cap /proc/1/status && capsh --print && sleep 99999999"
+      securityContext:
+        runAsNonRoot: false
+        runAsUser: 0
+        capabilities:
+          add:
+            - NET_RAW
+            - NET_ADMIN
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: run-as-service-account
+  labels:
+    app: run-as-service-account
+spec:
+  containers:
+    - name: run-as-service-account
+      image: quay.io/tsaarni/capabilities-test:latest
+      command: ["/bin/sh"]
+      args:
+        - "-c"
+        - "grep Cap /proc/1/status && capsh --print && sleep 99999999"
+      securityContext:
+        runAsNonRoot: false
+        runAsUser: 0
+  serviceAccountName: scc-demo-service-account
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: run-as-service-account2
+  labels:
+    app: run-as-service-account2
+spec:
+  containers:
+    - name: run-as-service-account2
+      image: quay.io/tsaarni/capabilities-test:latest
+      command: ["/bin/sh"]
+      args:
+        - "-c"
+        - "grep Cap /proc/1/status && capsh --print && sleep 99999999"
+      securityContext:
+        runAsNonRoot: false
+        runAsUser: 0
+  serviceAccountName: scc-demo-service-account
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: from-deployment-with-bound-service-account
+  labels:
+    app: from-deployment-with-bound-service-account
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: from-deployment-with-bound-service-account
+  template:
+    metadata:
+      labels:
+        app: from-deployment-with-bound-service-account
+    spec:
+      containers:
+        - name: from-deployment
+          image: quay.io/tsaarni/capabilities-test:latest
+          command: ["/bin/sh"]
+          args:
+            - "-c"
+            - "grep Cap /proc/1/status && capsh --print && sleep 99999999"
+          securityContext:
+            runAsNonRoot: false
+            runAsUser: 0
+      serviceAccountName: scc-demo-service-account
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: from-deployment-with-unbound-service-account
+  labels:
+    app: from-deployment-with-unbound-service-account
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: from-deployment-with-unbound-service-account
+  template:
+    metadata:
+      labels:
+        app: from-deployment-with-unbound-service-account
+    spec:
+      containers:
+        - name: from-deployment
+          image: quay.io/tsaarni/capabilities-test:latest
+          command: ["/bin/sh"]
+          args:
+            - "-c"
+            - "grep Cap /proc/1/status && capsh --print && sleep 99999999"
+          securityContext:
+            runAsNonRoot: false
+            runAsUser: 0
+      serviceAccountName: unbound-service-account

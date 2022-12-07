@@ -1,0 +1,87 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: mygateway
+spec:
+  selector:
+    istio: ingressgateway # use istio default ingress gateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    #- "*"  # accept any incoming request, we do not require TLS SNI to be set
+    - admin.127-0-0-111.nip.io
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: host1-cert 
+    hosts:
+    - "*"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: envoy-admin-service
+spec:
+  ports:
+  - name: http
+    port: 15000
+  type: ExternalName
+  externalName: admin.127-0-0-1.nip.io # this resolves to 127.0.0.1
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: admin
+spec:
+  hosts:
+  - "admin.127-0-0-111.nip.io" # this is external DNS name in my test environment
+  gateways:
+  - mygateway
+  http:
+  - route:
+    - destination:
+        host: envoy-admin-service
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: ingress
+  annotations:
+    kubernetes.io/ingress.class: istio
+spec:
+  rules:
+  - host: ingressv1beta1.127-0-0-111.nip.io
+    http:
+      paths:
+      - backend:
+          serviceName: envoy-admin-service
+          servicePort: 15000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingressv1
+  annotations:
+    kubernetes.io/ingress.class: istio
+spec:
+  rules:
+  - host: ingressv1.127-0-0-111.nip.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: envoy-admin-service
+            port:
+              number: 15000
+
+
+# http admin.127-0-0-111.nip.io/config_dump
+# http --verify certs/external-ca.pem https://admin.127-0-0-111.nip.io/config_dump
