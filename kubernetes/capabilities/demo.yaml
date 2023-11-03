@@ -18,6 +18,7 @@ spec:
   containers:
     - name: run-as-non-root
       image: quay.io/tsaarni/capabilities-test:latest
+      imagePullPolicy: IfNotPresent
       securityContext:
         runAsNonRoot: true
 ---
@@ -31,6 +32,7 @@ spec:
   containers:
     - name: run-as-root
       image: quay.io/tsaarni/capabilities-test:latest
+      imagePullPolicy: IfNotPresent
       securityContext:
         runAsUser: 0
 ---
@@ -44,8 +46,27 @@ spec:
   containers:
     - name: run-as-root-drop-all-caps
       image: quay.io/tsaarni/capabilities-test:latest
+      imagePullPolicy: IfNotPresent
       securityContext:
         runAsUser: 0
+        capabilities:
+          drop:
+            - all
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: run-as-root-drop-all-caps-escalation-true
+  labels:
+    app: run-as-root-drop-all-caps-escalation-true
+spec:
+  containers:
+    - name: run-as-root-drop-all-caps
+      image: quay.io/tsaarni/capabilities-test:latest
+      imagePullPolicy: IfNotPresent
+      securityContext:
+        runAsUser: 0
+        allowPrivilegeEscalation: true
         capabilities:
           drop:
             - all
@@ -60,6 +81,7 @@ spec:
   containers:
     - name: root-drop-all-caps-add-bind
       image: quay.io/tsaarni/capabilities-test:latest
+      imagePullPolicy: IfNotPresent
       securityContext:
         runAsUser: 0
         capabilities:
@@ -78,6 +100,7 @@ spec:
   containers:
     - name: non-root-drop-all-caps
       image: quay.io/tsaarni/capabilities-test:latest
+      imagePullPolicy: IfNotPresent
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000 # remove when running with restricted scc on openshift
@@ -95,6 +118,7 @@ spec:
   containers:
     - name: non-root-drop-all-caps-add-bind
       image: quay.io/tsaarni/capabilities-test:latest
+      imagePullPolicy: IfNotPresent
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000 # remove when running with restricted scc on openshift
@@ -114,10 +138,30 @@ spec:
   containers:
     - name: non-root-privilege-escalation-false
       image: quay.io/tsaarni/capabilities-test:latest
+      imagePullPolicy: IfNotPresent
       securityContext:
         allowPrivilegeEscalation: false
         runAsNonRoot: true
         runAsUser: 1000 # remove when running with restricted scc on openshift
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: non-root-drop-all-caps-privilege-escalation-true
+  labels:
+    app: non-root-drop-all-caps-privilege-escalation-true
+spec:
+  containers:
+    - name: non-root-privilege-escalation-false
+      image: quay.io/tsaarni/capabilities-test:latest
+      imagePullPolicy: IfNotPresent
+      securityContext:
+        allowPrivilegeEscalation: true
+        runAsNonRoot: true
+        runAsUser: 1000 # remove when running with restricted scc on openshift
+        capabilities:
+          drop:
+            - all
 ---
 apiVersion: v1
 kind: Pod
@@ -129,6 +173,7 @@ spec:
   containers:
     - name: root-add-caps
       image: quay.io/tsaarni/capabilities-test:latest
+      imagePullPolicy: IfNotPresent
       securityContext:
         runAsNonRoot: false
         capabilities:
@@ -146,6 +191,7 @@ spec:
   containers:
     - name: non-root-add-caps
       image: quay.io/tsaarni/capabilities-test:latest
+      imagePullPolicy: IfNotPresent
       securityContext:
         runAsNonRoot: false
         runAsUser: 1000 # remove when running with restricted scc on openshift
