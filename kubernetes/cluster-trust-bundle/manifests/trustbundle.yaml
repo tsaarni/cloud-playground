@@ -1,0 +1,16 @@
+apiVersion: certificates.k8s.io/v1alpha1
+kind: ClusterTrustBundle
+metadata:
+  name: foo
+spec:
+  trustBundle: |
+    -----BEGIN CERTIFICATE-----
+    MIIBUjCB+KADAgECAggXnK4922sOsTAKBggqhkjOPQQDAjANMQswCQYDVQQDEwJj
+    YTAeFw0yMzEyMDExMDI1MzlaFw0yNDExMzAxMDI1MzlaMA0xCzAJBgNVBAMTAmNh
+    MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAESIhGPuNHmezIn0dPrQCuMNKlZYU8
+    d8E8VeN/RxIDSsj+vQN6xTKXoHTxkoQblREhrw5utENnu30j4gEGYQlaBqNCMEAw
+    DgYDVR0PAQH/BAQDAgEGMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFDwjA/ce
+    kxlERj0PcM3/o6bovXEaMAoGCCqGSM49BAMCA0kAMEYCIQCXwQpGETglVFlqzyK2
+    spsoTrAgjGk+zvW+AQqq2ALVKAIhAOwpfdMnPRGhxVUNiU56ltNNC/3hGvFRs5+W
+    YTUpxCKn
+    -----END CERTIFICATE-----

@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: shell
+spec:
+  containers:
+    - name: shell
+      image: alpine:latest
+      command: ["/bin/sh"]
+      args:
+        - "-c"
+        - "sleep 99999999"
+      volumeMounts:
+        - name: trust-bundle
+          mountPath: /certs
+  volumes:
+    - name: trust-bundle
+      projected:
+        sources:
+          - clusterTrustBundle:
+              name: foo
