@@ -74,6 +74,24 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
+  name: run-as-root-privileged-drop-all-caps-escalation-true
+  labels:
+    app: run-as-root-drop-all-caps-escalation-true
+spec:
+  containers:
+    - name: run-as-root-drop-all-caps
+      image: quay.io/tsaarni/capabilities-test:latest
+      imagePullPolicy: IfNotPresent
+      securityContext:
+        runAsUser: 0
+        privileged: true
+        capabilities:
+          drop:
+            - all
+---
+apiVersion: v1
+kind: Pod
+metadata:
   name: run-as-root-drop-all-caps-add-bind
   labels:
     app: run-as-root-drop-all-caps-add-bind
