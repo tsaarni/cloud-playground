@@ -1,0 +1,45 @@
+apiVersion: webapp.example.com/v1
+kind: Guestbook
+metadata:
+  name: guestbook-entry-non-default
+spec:
+  article: non default value
+  author:
+    firstName: non default first
+    lastName: non default last
+---
+apiVersion: webapp.example.com/v1
+kind: Guestbook
+metadata:
+  name: guestbook-entry-last-name-missing
+spec:
+  article: non default value
+  author:
+    firstName: non default first
+---
+apiVersion: webapp.example.com/v1
+kind: Guestbook
+metadata:
+  name: guestbook-entry-missing-author
+spec:
+  article: non default value
+---
+apiVersion: webapp.example.com/v1
+kind: Guestbook
+metadata:
+  name: guestbook-entry-missing-article
+spec:
+  author:
+    firstName: first
+    lastName: last
+---
+apiVersion: webapp.example.com/v1
+kind: Guestbook
+metadata:
+  name: guestbook-entry-missing-spec
+---
+apiVersion: webapp.example.com/v1
+kind: Guestbook
+metadata:
+  name: guestbook-entry-missing-article-author
+spec: {}
