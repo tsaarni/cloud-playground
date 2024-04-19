@@ -1,0 +1,13 @@
+subject: cn=ca
+---
+subject: cn=dex
+issuer: cn=ca
+sans:
+- DNS:dex.127.0.0.152.nip.io
+---
+subject: cn=internal-root-ca
+---
+subject: cn=ldap
+issuer: cn=internal-root-ca
+sans:
+- DNS:ldap

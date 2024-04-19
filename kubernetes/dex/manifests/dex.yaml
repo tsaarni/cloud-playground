@@ -1,0 +1,199 @@
+# reference: https://github.com/dexidp/dex/blob/master/examples/k8s/dex.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: dex
+  name: dex
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dex
+  template:
+    metadata:
+      labels:
+        app: dex
+    spec:
+      containers:
+        - image: ghcr.io/dexidp/dex:v2.39.1
+          name: dex
+          command: ["/usr/local/bin/dex", "serve", "/etc/dex/cfg/config.yaml"]
+
+          ports:
+            - name: http
+              containerPort: 5555
+            - name: https
+              containerPort: 5556
+
+          volumeMounts:
+            - name: config
+              mountPath: /etc/dex/cfg
+            - name: data
+              mountPath: /data
+            - name: dex-cert
+              mountPath: /etc/dex/tls
+      volumes:
+        - name: config
+          configMap:
+            name: dex
+            items:
+              - key: config.yaml
+                path: config.yaml
+        - name: data
+          emptyDir: {}
+        - name: dex-cert
+          secret:
+            secretName: dex-cert
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dex
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+    - name: https
+      port: 443
+      targetPort: https
+  selector:
+    app: dex
+---
+apiVersion: projectcontour.io/v1
+kind: HTTPProxy
+metadata:
+  name: dex
+spec:
+  virtualhost:
+    fqdn: dex.127.0.0.152.nip.io
+    tls:
+      secretName: dex-cert
+  routes:
+    - services:
+        - name: dex
+          port: 80
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: dex
+data:
+  config.yaml: |
+    # https://github.com/dexidp/dex/blob/master/examples/config-dev.yaml
+    issuer: https://dex.127.0.0.152.nip.io
+    storage:
+      type: sqlite3
+      config:
+        file: /data/dex.db
+    web:
+      http: 0.0.0.0:5555
+      https: 0.0.0.0:5556
+      tlsCert: /etc/dex/tls/tls.crt
+      tlsKey: /etc/dex/tls/tls.key
+      # headers:
+      #   X-Frame-Options: "DENY"
+      #   X-Content-Type-Options: "nosniff"
+      #   X-XSS-Protection: "1; mode=block"
+      #   Content-Security-Policy: "default-src 'self'"
+      #   Strict-Transport-Security: "max-age=31536000; includeSubDomains"
+
+    # Configuration for dex appearance
+    # frontend:
+    #   issuer: dex
+    #   logoURL: theme/logo.png
+    #   dir: web/
+    #   theme: light
+
+    # Uncomment this block to enable configuration for the expiration time durations.
+    # Is possible to specify units using only s, m and h suffixes.
+    # expiry:
+    #   deviceRequests: "5m"
+    #   signingKeys: "6h"
+    #   idTokens: "24h"
+    #   refreshTokens:
+    #     reuseInterval: "3s"
+    #     validIfNotUsedFor: "2160h" # 90 days
+    #     absoluteLifetime: "3960h" # 165 days
+
+    # Options for controlling the logger.
+    logger:
+      level: "debug"
+    #   format: "text" # can also be "json"
+
+    # OIDC client parameters
+    staticClients:
+    - id: kubernetes  # client id / aud claim
+      redirectURIs:
+      - 'http://localhost:8000'
+      name: kubernetes
+      secret: myclientsecret
+
+    connectors:
+    - type: ldap
+      id: ldap
+      name: LDAP
+      config:
+        host: openldap:389
+        insecureNoSSL: true
+        bindDN: cn=ldap-admin,ou=users,o=example
+        bindPW: ldap-admin
+
+        usernamePrompt: Username
+
+        userSearch:
+          baseDN: ou=users,o=example
+          filter: "(objectClass=inetOrgPerson)"
+          username: uid
+          idAttr: dn
+          nameAttr: cn
+          emailAttr: mail
+          #preferredUsernameAttr: uid
+
+        groupSearch:
+          baseDN: ou=groups,o=example
+          filter: "(objectClass=groupOfNames)"
+
+          userMatchers:
+            # A user is a member of a group when their uid matches
+            # the value of a "member" attribute on the group entity.
+          - userAttr: dn
+            groupAttr: member
+
+          # The group name should be the "cn" value.
+          nameAttr: cn
+
+
+    # Default values shown below
+    oauth2:
+      # By default, Dex will ask for approval to share data with application
+      # (approval for sharing data from connected IdP to Dex is separate process on IdP)
+      skipApprovalScreen: true
+
+    # grantTypes determines the allowed set of authorization flows.
+    #   grantTypes:
+    #     - "authorization_code"
+    #     - "refresh_token"
+    #     - "implicit"
+    #     - "password"
+    #     - "urn:ietf:params:oauth:grant-type:device_code"
+    #     - "urn:ietf:params:oauth:grant-type:token-exchange"
+        # responseTypes determines the allowed response contents of a successful authorization flow.
+        # use ["code", "token", "id_token"] to enable implicit flow for web-only clients.
+    #   responseTypes: [ "code" ] # also allowed are "token" and "id_token"
+        # If only one authentication method is enabled, the default behavior is to
+        # go directly to it. For connected IdPs, this redirects the browser away
+        # from application to upstream provider such as the Google login page
+    #   alwaysShowLoginScreen: false
+        # Uncomment the passwordConnector to use a specific connector for password grants
+    #   passwordConnector: local
+
+
+    enablePasswordDB: true
+    staticPasswords:
+    - email: "admin@example.com"
+      # mkpasswd -m bcrypt admin
+      hash: $2b$05$.bi1qmbns08QHn8PBW4XX.RXLg09OR8xJqyQVq8qj2U4853d9t/ra
+      username: "admin"
+      userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"

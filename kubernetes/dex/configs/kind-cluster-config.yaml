@@ -1,0 +1,32 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+# https://v1-29.docs.kubernetes.io/docs/reference/access-authn-authz/validating-admission-policy/
+featureGates:
+  "ValidatingAdmissionPolicy": true
+runtimeConfig:
+  "admissionregistration.k8s.io/v1beta1": true
+kubeadmConfigPatches:
+# https://dexidp.io/docs/guides/kubernetes/
+# https://kubernetes.io/docs/reference/access-authn-authz/authentication/#configuring-the-api-server
+- |-
+  kind: ClusterConfiguration
+  apiServer:
+    extraArgs:
+      oidc-issuer-url: https://dex.127.0.0.152.nip.io
+      oidc-ca-file: /etc/ca-certificates/dex/ca.pem
+      oidc-client-id: kubernetes
+      oidc-username-claim: email
+      oidc-groups-claim: groups
+nodes:
+- role: control-plane
+  extraMounts:
+  - hostPath: certs/ca.pem
+    containerPath: /etc/ca-certificates/dex/ca.pem
+    readOnly: true
+  extraPortMappings:
+  - containerPort: 80
+    hostPort: 80
+    listenAddress: "127.0.0.152"
+  - containerPort: 443
+    hostPort: 443
+    listenAddress: "127.0.0.152"

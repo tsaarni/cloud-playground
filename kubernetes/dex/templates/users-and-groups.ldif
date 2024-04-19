@@ -1,0 +1,108 @@
+#
+# Directory tree for users and groups
+#
+
+dn: o=example
+objectClass: organization
+o: example
+
+dn: ou=users,o=example
+objectClass: organizationalUnit
+ou: people
+
+dn: ou=groups,o=example
+objectClass: organizationalUnit
+ou: groups
+
+dn: ou=ppolicy,o=example
+objectClass: organizationalUnit
+ou: groups
+
+
+#
+# Users
+#
+
+dn: cn=ldap-admin,ou=users,o=example
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: ldap-admin
+cn: ldap-admin
+uidNumber: 1001
+gidNumber: 1001
+userPassword: {CRYPT}$(mkpasswd -m sha-512 ldap-admin)
+loginShell: /bin/bash
+homeDirectory: /home/
+sn: adminsurename
+givenName: admingivenname
+mail: ldap-admin@example.com
+
+dn: cn=ldap-client,ou=users,o=example
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: ldap-client
+cn: ldap-client
+uidNumber: 1002
+gidNumber: 1002
+loginShell: /bin/bash
+homeDirectory: /home/
+sn: clientsurename
+givenName: clientgivenname
+mail: ldap-client@example.com
+
+dn: cn=joe,ou=users,o=example
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: joe
+cn: joe
+uidNumber: 1003
+gidNumber: 1003
+userPassword: {CRYPT}$(mkpasswd -m sha-512 joe)
+loginShell: /bin/bash
+homeDirectory: /home/
+sn: joesurename
+givenName: joegivenname
+mail: joe@example.com
+
+dn: cn=jill,ou=users,o=example
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: jill
+cn: jill
+uidNumber: 1004
+gidNumber: 1004
+userPassword: {CRYPT}$(mkpasswd -m sha-512 jill)
+loginShell: /bin/bash
+homeDirectory: /home/
+sn: jillsurename
+givenName: jillgivenname
+mail: jill@example.com
+
+#
+# Groups
+#
+
+dn: cn=admins,ou=groups,o=example
+objectClass: posixGroup
+objectclass: groupOfNames
+cn: admins
+gidNumber: 10001
+member: cn=ldap-admin,ou=users,o=example
+
+dn: cn=global-secret-reader,ou=groups,o=example
+objectClass: posixGroup
+objectclass: groupOfNames
+cn: global-secret-reader
+gidNumber: 10002
+member: cn=joe,ou=users,o=example
+
+dn: cn=namespace-default-admins,ou=groups,o=example
+objectClass: posixGroup
+objectclass: groupOfNames
+cn: namespace-default-admin
+gidNumber: 10003
+member: cn=jill,ou=users,o=example
