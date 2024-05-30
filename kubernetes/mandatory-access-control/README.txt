@@ -1,9 +1,8 @@
 
 
+# Preconditions: check that apparmor is enabled on host
+aa-enabled      # should print "Yes"
 
-# on host, check that apparmor is enabled
-aa-enabled      # check if apparmor is enabled on host, should print "Yes"
-sudo aa-status  # check processes with apparmor profiles
 
 # create a cluster
 kind delete cluster --name mac-test   # delete old if exists
@@ -17,7 +16,7 @@ kind create cluster --name mac-test
 # exec into the kind node
 docker exec -it mac-test-control-plane bash
 
-# inside the container run following
+# inside "mac-test-control-plane" container run following
 mount -t securityfs securityfs /sys/kernel/security  # to make apparmor available in the container
 apt update && apt install apparmor                   # install apparmor_parser
 
@@ -71,7 +70,10 @@ kubectl exec shell-unconfined -- grep Seccomp /proc/1/status
 
 
 
-## Create a namespace with restricted pod security policy
+### pod security standard
+
+
+## Create a namespace that enforces restricted pod security standard
 
 kubectl create ns restricted
 kubectl label --overwrite ns restricted  \
@@ -90,8 +92,8 @@ kubectl -n restricted apply -f manifest/shell-unconfined.yaml  # this should fai
 
 # selinux on host
 getenforce
+# output:
 # Enforcing
-
 
 
 cat /proc/1/attr/current
@@ -101,7 +103,8 @@ cat /proc/1/attr/current
 
 
 
-#### Checks in container runtime if AppArmor enabled
+#### Notes
+# Checks in container runtime code for AppArmor being enabled
 
 https://github.com/opencontainers/runc/blob/1aeefd9cbdda983d75bdd8d869fe2ac5faab3707/libcontainer/apparmor/apparmor_linux.go#L18-L26
 
