@@ -4,7 +4,7 @@ metadata:
   name: shell-restricted
   labels:
     app: shell-restricted
-# deprecated since kubernetesv1.30
+# deprecated since kubernetes v1.30
 #  annotations:
 #    container.apparmor.security.beta.kubernetes.io/shell: 'runtime/default'
 

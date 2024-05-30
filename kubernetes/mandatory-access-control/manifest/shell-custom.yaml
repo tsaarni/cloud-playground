@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: shell-custom
+  labels:
+    app: shell-custom
+# deprecated since kubernetes v1.30
+#  annotations:
+#    container.apparmor.security.beta.kubernetes.io/shell: 'apparmor-deny-test'
+
+spec:
+  containers:
+  - name: shell
+    image: alpine:latest
+    command: ["/bin/sh"]
+    args:
+    - "-c"
+    - "sleep 99999999"
+    securityContext:
+# new since kubernetes v1.30
+      appArmorProfile:
+        type: Localhost
+        localhostProfile: apparmor-deny-test

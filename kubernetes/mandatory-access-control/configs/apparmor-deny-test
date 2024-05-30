@@ -1,0 +1,14 @@
+#include <tunables/global>
+
+profile apparmor-deny-test flags=(attach_disconnected) {
+
+    #include <abstractions/base>
+
+    network,
+    capability,
+    file,
+    unmount,
+    signal,
+
+    deny /tmp/denied rw,
+}

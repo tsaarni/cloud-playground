@@ -70,6 +70,26 @@ kubectl exec shell-unconfined -- grep Seccomp /proc/1/status
 
 
 
+### AppArmor custom profile
+
+# load custom profile on host
+sudo apparmor_parser -r configs/apparmor-deny-test
+
+# check that it was loaded
+sudo apparmor_status | grep apparmor-deny-test
+
+
+kubectl apply -f manifest/shell-custom.yaml
+
+kubectl exec shell-custom -- touch /tmp/denied
+# output:
+# touch: /tmp/denied: Permission denied
+# command terminated with exit code 1
+
+kubectl exec shell-custom -- touch /tmp/not-denied
+
+
+
 ### pod security standard
 
 
@@ -109,3 +129,7 @@ cat /proc/1/attr/current
 https://github.com/opencontainers/runc/blob/1aeefd9cbdda983d75bdd8d869fe2ac5faab3707/libcontainer/apparmor/apparmor_linux.go#L18-L26
 
 https://github.com/containerd/containerd/blob/eb8b3de9d3f8b137efe26d62e5df274a00adf51a/pkg/apparmor/apparmor_linux.go#L34-L44
+
+
+# default container runtime profile
+https://github.com/containerd/containerd/blob/eb8b3de9d3f8b137efe26d62e5df274a00adf51a/contrib/apparmor/template.go#L42-L95
