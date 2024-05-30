@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: shell-default
+  name: shell-unconfined
   labels:
-    app: shell-default
+    app: shell-unconfined
 spec:
   containers:
     - name: shell
@@ -12,3 +12,6 @@ spec:
       args:
         - "-c"
         - "sleep 99999999"
+      securityContext:
+        appArmorProfile:
+          type: "Unconfined"

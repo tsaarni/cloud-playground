@@ -1,11 +1,12 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: shell
+  name: shell-restricted
   labels:
-    app: shell
-  annotations:
-    container.apparmor.security.beta.kubernetes.io/shell: 'runtime/default'
+    app: shell-restricted
+# deprecated since kubernetesv1.30
+#  annotations:
+#    container.apparmor.security.beta.kubernetes.io/shell: 'runtime/default'
 
 spec:
   containers:
@@ -23,4 +24,6 @@ spec:
         drop: ["ALL"]
       seccompProfile:
         type: RuntimeDefault
- 
+# new since kubernetes v1.30
+      appArmorProfile:
+        type: RuntimeDefault
