@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: shell
+  labels:
+    name: shell
+spec:
+  containers:
+  - name: shell
+    image: alpine:3.20
+    command:
+      - /bin/sh
+      - -c
+      - |
+        apk add --update-cache py3-pip py3-authlib py3-requests httpie &&
+        sleep infinity
