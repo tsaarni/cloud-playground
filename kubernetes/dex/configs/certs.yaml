@@ -11,3 +11,8 @@ subject: cn=ldap
 issuer: cn=internal-root-ca
 sans:
 - DNS:ldap
+---
+subject: cn=keycloak
+issuer: cn=ca
+sans:
+- DNS:keycloak.127.0.0.152.nip.io

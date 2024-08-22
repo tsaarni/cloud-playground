@@ -41,10 +41,22 @@ spec:
               - key: config.yaml
                 path: config.yaml
         - name: data
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: dex
         - name: dex-cert
           secret:
             secretName: dex-cert
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: dex
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
 ---
 apiVersion: v1
 kind: Service
@@ -82,6 +94,7 @@ metadata:
 data:
   config.yaml: |
     # https://github.com/dexidp/dex/blob/master/examples/config-dev.yaml
+    # https://github.com/dexidp/dex/blob/master/connector/oidc/oidc.go
     issuer: https://dex.127.0.0.152.nip.io
     storage:
       type: sqlite3
@@ -163,7 +176,22 @@ data:
 
           # The group name should be the "cn" value.
           nameAttr: cn
-
+    - type: oidc
+      id: keycloak
+      name: Keycloak
+      config:
+        issuer: https://keycloak.127.0.0.152.nip.io/realms/master
+        clientID: dex
+        clientSecret: REMEMBER_TO_CHANGE_ME
+        redirectURI: https://dex.127.0.0.152.nip.io/callback
+        scopes:
+          - openid
+          - profile
+          - email
+          - groups
+        insecureEnableGroups: true
+        rootCAs:
+        - /etc/dex/tls/ca.pem
 
     # Default values shown below
     oauth2:
