@@ -217,3 +217,32 @@ spec:
           add:
             - NET_RAW
             - NET_ADMIN
+---
+# AllowPrivilegeEscalation true means that a child process with file capabilities can get elevated privileges, withing the bounding capabilities.
+# AllowPrivilegeEscalation false means the a child process cannot gain more privileges than the parent process.
+# However, the capabilities can still be used when all the processes from the entrypoint to the target process have the same capabilities.
+# Since exec drops the capabilities from the child process by default, each executable must have the capabilities set.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: non-root-entrypoint-with-filecaps
+  labels:
+    app: non-root-entrypoint-with-filecaps
+spec:
+  containers:
+    - name: non-root-entrypoint-with-filecaps
+      image: quay.io/tsaarni/capabilities-test:latest
+      imagePullPolicy: IfNotPresent
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000 # remove when running with restricted scc on openshift
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - all
+          add:
+            - NET_RAW
+            #- CHOWN
+      command: ["/bin/busybox-with-caps"]
+      #command: ["/bin/busybox"]
+      args: ["sh", "-c", "/print-capabilities.sh && sleep 99999999"]
