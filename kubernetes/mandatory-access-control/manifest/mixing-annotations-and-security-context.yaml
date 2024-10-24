@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mixing-annotations-and-security-context
+  labels:
+    app: mixing-annotations-and-security-context
+  # deprecated since kubernetes v1.30
+  annotations:
+    # Since default profile is enforced, using unconfined profile to see that this takes effect.
+    container.apparmor.security.beta.kubernetes.io/annotation: 'unconfined'
+
+spec:
+  containers:
+  - name: securitycontext
+    image: alpine:latest
+    command: ["/bin/sh"]
+    args:
+    - "-c"
+    - "sleep 99999999"
+    securityContext:
+      # new since kubernetes v1.30
+      appArmorProfile:
+        # Since default profile is enforced, using unconfined profile to see that this takes effect.
+        type: Unconfined
+  - name: annotation
+    image: alpine:latest
+    command: ["/bin/sh"]
+    args:
+    - "-c"
+    - "sleep 99999999"

@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: shell-default
+  name: default
   labels:
-    app: shell-default
+    app: default
 spec:
   containers:
-    - name: shell
+    - name: default
       image: alpine:latest
       command: ["/bin/sh"]
       args:

@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-level-security-context
+  labels:
+    app: pod-level-security-context
+spec:
+  securityContext:
+    appArmorProfile:
+      # The runtime default is apparmor enforced, so this should change the default to unconfined.
+      type: Unconfined
+  containers:
+  - name: default-unconfined
+    image: alpine:latest
+    command: ["/bin/sh"]
+    args:
+    - "-c"
+    - "sleep 99999999"
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+  - name: override-pod-level-default
+    image: alpine:latest
+    command: ["/bin/sh"]
+    args:
+    - "-c"
+    - "sleep 99999999"
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+      appArmorProfile:
+        # This should override the pod-level default to apparmor enforced.
+        type: RuntimeDefault

@@ -32,41 +32,55 @@ systemctl restart kubelet
 #
 
 ## restricted
-kubectl apply -f manifest/shell-restricted.yaml
+kubectl apply -f manifest/restricted.yaml
 
-kubectl exec shell-restricted -- cat /proc/1/attr/current
+kubectl exec restricted -- cat /proc/1/attr/current
 # output:
 # cri-containerd.apparmor.d (enforce)
 
-kubectl exec shell-restricted -- grep Seccomp /proc/1/status
+kubectl exec restricted -- grep Seccomp /proc/1/status
 # output:
 # Seccomp:        2
 # Seccomp_filters:        1
 
 
 ## default
-kubectl apply -f manifest/shell-default.yaml
+kubectl apply -f manifest/default.yaml
 
-kubectl exec shell-default -- cat /proc/1/attr/current
+kubectl exec default -- cat /proc/1/attr/current
 # output:
 # cri-containerd.apparmor.d (enforce)
 
-kubectl exec shell-default -- grep Seccomp /proc/1/status
+kubectl exec default -- grep Seccomp /proc/1/status
 # output:
 # Seccomp:        0
 # Seccomp_filters:        0
 
 ## unconfined
-kubectl apply -f manifest/shell-unconfined.yaml
+kubectl apply -f manifest/unconfined.yaml
 
-kubectl exec shell-unconfined -- cat /proc/1/attr/current
+kubectl exec unconfined -- cat /proc/1/attr/current
 # output:
-# unconfined (enforce)
+# unconfined
 
-kubectl exec shell-unconfined -- grep Seccomp /proc/1/status
+kubectl exec unconfined -- grep Seccomp /proc/1/status
 # output:
 # Seccomp:        0
 # Seccomp_filters:        0
+
+
+## set pod level profile to define the default for all containers in the pod
+## and override it for one container
+
+kubectl apply -f manifest/pod-level-security-context.yaml
+
+kubectl exec pod-level-security-context -c default-unconfined -- cat /proc/1/attr/current
+# output:
+# unconfined
+
+kubectl exec pod-level-security-context -c override-pod-level-default -- cat /proc/1/attr/current
+# output:
+# cri-containerd.apparmor.d (enforce)
 
 
 
@@ -79,14 +93,40 @@ sudo apparmor_parser -r configs/apparmor-deny-test
 sudo apparmor_status | grep apparmor-deny-test
 
 
-kubectl apply -f manifest/shell-custom.yaml
+kubectl apply -f manifest/custom.yaml
 
-kubectl exec shell-custom -- touch /tmp/denied
+kubectl exec custom -- touch /tmp/denied
 # output:
 # touch: /tmp/denied: Permission denied
 # command terminated with exit code 1
 
-kubectl exec shell-custom -- touch /tmp/not-denied
+kubectl exec custom -- touch /tmp/not-denied
+
+
+
+## Mixed case: using annotation and security context within single pod
+
+kubectl apply -f manifest/mixing-annotations-and-security-context.yaml
+# output:
+# Warning: metadata.annotations[container.apparmor.security.beta.kubernetes.io/annotation]: deprecated since v1.30; use the "appArmorProfile" field instead
+kubectl exec mixing-annotations-and-security-context -c securitycontext -- cat /proc/1/attr/current
+# output:
+# unconfined
+kubectl exec mixing-annotations-and-security-context -c annotation -- cat /proc/1/attr/current
+# output:
+# unconfined
+
+
+
+
+## Failing validation
+
+### https://github.com/kubernetes/kubernetes/issues/128306
+
+
+kubectl apply -f manifest/deployment-fails-validation.yaml
+# output:
+# The Deployment "deployment-fails-validation" is invalid: spec.template.spec.containers[0].securityContext.appArmorProfile.type: Forbidden: apparmor type in annotation and field must match
 
 
 

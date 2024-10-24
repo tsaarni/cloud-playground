@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deployment-fails-validation
+spec:
+  selector:
+    matchLabels:
+      app: deployment-fails-validation
+  template:
+    metadata:
+      labels:
+        app: deployment-fails-validation
+      annotations:
+        # Override the pod-level apparmor profile with a container-level profile, using annotation.
+        # Deprecated since kubernetes v1.30.
+        container.apparmor.security.beta.kubernetes.io/fails-validation: 'runtime/default'
+    spec:
+      securityContext:
+        appArmorProfile:
+          # Set pod-level default in the template.
+          type: Unconfined
+      containers:
+      - name: fails-validation
+        image: alpine:latest
+        command: ["/bin/sh"]
+        args:
+        - "-c"
+        - "sleep 99999999"

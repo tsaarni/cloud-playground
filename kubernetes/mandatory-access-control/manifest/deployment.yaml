@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test
+
+spec:
+  selector:
+    matchLabels:
+      app: test
+  template:
+    metadata:
+      labels:
+        app: test
+      annotations:
+        container.apparmor.security.beta.kubernetes.io/shell-annotation: "unconfined"
+    spec:
+      securityContext:
+        appArmorProfile:
+          type: Unconfined
+      containers:
+      - name: shell-annotation
+        image: alpine:latest
+        command: ["/bin/sh"]
+        args:
+        - "-c"
+        - "sleep 99999999"
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+      - name: test2
+        image: alpine:latest
+        command: ["/bin/sh"]
+        args:
+        - "-c"
+        - "sleep 99999999"
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
