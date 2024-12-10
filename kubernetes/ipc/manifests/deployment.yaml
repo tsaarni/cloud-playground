@@ -1,0 +1,202 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: single-container
+  labels:
+    name: single-container
+spec:
+  containers:
+    - name: single-container
+      image: ipc-test-app:latest
+      imagePullPolicy: Never
+      command: ["/bin/sh", "-c"]
+      args:
+       - sleep 1000000
+      volumeMounts:
+        - name: data-host
+          mountPath: /data-host
+  volumes:
+    - name: data-host
+      hostPath:
+        path: /data
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: two-containers
+  labels:
+    name: two-containers
+spec:
+  containers:
+    - name: container1
+      image: ipc-test-app:latest
+      imagePullPolicy: Never
+      command: ["/bin/sh", "-c"]
+      args:
+       - sleep 1000000
+      volumeMounts:
+        - name: data-host
+          mountPath: /data-host
+        - name: data-emptydir
+          mountPath: /data-emptydir
+    - name: container2
+      image: ipc-test-app:latest
+      imagePullPolicy: Never
+      command: ["/bin/sh", "-c"]
+      args:
+       - sleep 1000000
+      volumeMounts:
+        - name: data-host
+          mountPath: /data-host
+        - name: data-emptydir
+          mountPath: /data-emptydir
+  volumes:
+    - name: data-host
+      hostPath:
+        path: /data
+    - name: data-emptydir
+      emptyDir: {}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: non-root-container
+  labels:
+    name: non-root-container
+spec:
+  containers:
+    - name: single-container
+      image: ipc-test-app:latest
+      imagePullPolicy: Never
+      command: ["/bin/sh", "-c"]
+      args:
+       - sleep 1000000
+      volumeMounts:
+        - name: data-host
+          mountPath: /data-host
+      securityContext:
+        runAsUser: 1000
+  volumes:
+    - name: data-host
+      hostPath:
+        path: /data
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dev-shm-on-host-volume-1
+  labels:
+    name: dev-shm-on-host-volume-1
+spec:
+  containers:
+  - name: container
+    image: ipc-test-app:latest
+    imagePullPolicy: Never
+    command: ["/bin/sh", "-c"]
+    args:
+     - sleep 1000000
+    volumeMounts:
+      - name: dev-shm
+        mountPath: /dev/shm
+  volumes:
+    - name: dev-shm
+      hostPath:
+        path: /data
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dev-shm-on-host-volume-2
+  labels:
+    name: dev-shm-on-host-volume-2
+spec:
+  containers:
+  - name: container
+    image: ipc-test-app:latest
+    imagePullPolicy: Never
+    command: ["/bin/sh", "-c"]
+    args:
+     - sleep 1000000
+    volumeMounts:
+      - name: dev-shm
+        mountPath: /dev/shm
+  volumes:
+    - name: dev-shm
+      hostPath:
+        path: /data
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dev-shm-on-host-volume-3-non-root
+  labels:
+    name: dev-shm-on-host-volume-3-non-root
+spec:
+  containers:
+  - name: container
+    image: ipc-test-app:latest
+    imagePullPolicy: Never
+    command: ["/bin/sh", "-c"]
+    args:
+     - sleep 1000000
+    volumeMounts:
+      - name: dev-shm
+        mountPath: /dev/shm
+    securityContext:
+      runAsUser: 1000
+  volumes:
+    - name: dev-shm
+      hostPath:
+        path: /data
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: host-ipc-1
+  labels:
+    name: host-ipc
+spec:
+  containers:
+  - name: container
+    image: ipc-test-app:latest
+    imagePullPolicy: Never
+    command: ["/bin/sh", "-c"]
+    args:
+     - sleep 1000000
+  hostIPC: true
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: host-ipc-2
+  labels:
+    name: host-ipc
+spec:
+  containers:
+  - name: container
+    image: ipc-test-app:latest
+    imagePullPolicy: Never
+    command: ["/bin/sh", "-c"]
+    args:
+     - sleep 1000000
+  hostIPC: true
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: host-ipc-3-non-root
+  labels:
+    name: host-ipc
+spec:
+  containers:
+  - name: container
+    image: ipc-test-app:latest
+    imagePullPolicy: Never
+    command: ["/bin/sh", "-c"]
+    args:
+     - sleep 1000000
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+  hostIPC: true
