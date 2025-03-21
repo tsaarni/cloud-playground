@@ -19,8 +19,11 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"fmt"
+	"net/http"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -37,6 +40,8 @@ import (
 	// _ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 )
 
+// Originally based on https://github.com/kubernetes/client-go/blob/master/examples/out-of-cluster-client-configuration/main.go
+
 func main() {
 	var kubeconfig *string
 	if home := homedir.HomeDir(); home != "" {
@@ -52,11 +57,31 @@ func main() {
 		panic(err.Error())
 	}
 
+	keylogFile, err := os.OpenFile("keylog.txt", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o600)
+	if err != nil {
+		panic(err)
+	}
+
+	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
+		if httpTransport, ok := rt.(*http.Transport); ok {
+			httpTransport.TLSClientConfig.CipherSuites = []uint16{
+				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+				// Note that TLS 1.3 ciphersuites are not configurable.
+			}
+			// Write keylog to file for debugging purposes.
+			httpTransport.TLSClientConfig.KeyLogWriter = keylogFile
+		} else {
+			panic("httpTransport is not of type *http.Transport")
+		}
+		return rt
+	}
+
 	// create the clientset
 	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
+
 	for {
 		pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
