@@ -9,4 +9,4 @@ kubeadmConfigPatches:
       service-account-extend-token-expiration: "false"
 nodes:
 - role: control-plane
-  image: kindest/node:v1.22.0
+#  image: kindest/node:v1.22.0

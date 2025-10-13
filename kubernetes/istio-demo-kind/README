@@ -7,32 +7,35 @@ kind delete cluster --name istio
 kind create cluster --config configs/kind-cluster-config.yaml --name istio
 
 # Download istio release from https://github.com/istio/istio/releases
-wget https://github.com/istio/istio/releases/download/1.9.7/istio-1.9.7-linux-amd64.tar.gz
+wget https://github.com/istio/istio/releases/download/1.24.2/istio-1.24.2-linux-amd64.tar.gz
 tar zxvf istio-*.tar.gz && rm istio-*.tar.gz
 export PATH=$PATH:$(cd istio-*/bin; pwd)
 
 istioctl install --set profile=demo
-istioctl install --set profile=demo --set meshConfig.outboundTrafficPolicy.mode=REGISTRY_ONLY
+### istioctl install --set profile=demo --set meshConfig.outboundTrafficPolicy.mode=REGISTRY_ONLY
 
-# edit the nodePorts for http2 and https to 80 and 443
-kubectl -n istio-system patch service istio-ingressgateway --patch-file=manifest/patch-change-nodeports.yaml
+# Edit the nodePorts for http2 and https to 80 and 443
+kubectl -n istio-system patch service istio-ingressgateway --patch-file=manifests/patch-change-nodeports.yaml
 
-# enable sidecar injection
+# Enable sidecar injection
 kubectl label namespace default istio-injection=enabled
 
-# generate certificates (https://github.com/tsaarni/certyaml/)
+# Generate certificates (https://github.com/tsaarni/certyaml/)
 mkdir -p certs
 certyaml --destination certs configs/certs.yaml
-kubectl create -n istio-system secret tls host1-cert --cert=certs/host1.pem --key=certs/host1-key.pem --dry-run=client -o yaml | kubectl apply -f -
+## or
+
+kubectl create -n istio-system secret generic host1-cert --from-file=tls.crt=certs/host1.pem --from-file=tls.key=certs/host1-key.pem --from-file=cacert=certs/internal-ca.pem --dry-run=client -o yaml | kubectl apply -f -
 
 # install echoserver
-kubectl apply -f manifests/echoserver-without-tls.yaml
-
-# test that the service can be accessed
-http http://host1.127-0-0-111.nip.io/
+kubectl apply -f manifests/echoserver-with-sidecar.yaml
 http --verify=certs/external-ca.pem https://host1.127-0-0-111.nip.io/
+http --verify=certs/external-ca.pem --cert=certs/client.pem --cert-key=certs/client-key.pem https://host1.127-0-0-111.nip.io/
 
 
+# install echoserver with sidecar and RBAC policy
+kubectl apply -f manifests/echoserver-with-sidecar-and-auth-policy.yaml
+http --verify=certs/external-ca.pem --cert=certs/client.pem --cert-key=certs/client-key.pem https://host1.127-0-0-111.nip.io/allowed
 
 
 
@@ -128,6 +131,3 @@ kubectl -n istio-system rollout restart deployment/istiod
 
 kubectl -n istio-system port-forward deployment/istio-ingressgateway 15000
 http localhost:15000/config_dump | jq -C . | less
-
-
-
